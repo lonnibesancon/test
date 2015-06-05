@@ -5,11 +5,18 @@ TouchListener::TouchListener(TouchRenderer* tr)
 {
 	touchrenderer = tr ;
 	cout << "Touch Renderer Created" << endl ;
+	int port = 3333 ;
+	client = new TuioClient(port);
+	client->addTuioListener(this);
+	client->connect(false);
 }
 
 
 TouchListener::~TouchListener(void)
 {
+	std::cout << "::~TuioReceiver()\n";
+	client->disconnect();
+	delete client;
 }
 
 

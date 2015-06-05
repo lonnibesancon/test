@@ -45,6 +45,9 @@ public:
 
 	void refresh(TuioTime frameTime);
 
+private:
+	TuioClient* client;
+
 };
 
 #endif

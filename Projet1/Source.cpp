@@ -20,6 +20,10 @@
 #include "vtkInteractorStyleJoystickActor.h"
 #include "vtkInteractorStyleMultiTouchCamera.h"
 
+#include "TUIO\TuioListener.h"
+#include "TouchListener.h"
+#include "TouchRenderer.h"
+
 using namespace std ;
 
 
@@ -45,6 +49,9 @@ public:
 
 int main()
 {
+	TouchRenderer TouchRenderer = new TouchRenderer();
+	TouchListener* touchlistener;
+	touchlistener = new TouchListener(TouchRenderer);
   //
   // Next we create an instance of vtkConeSource and set some of its
   // properties. The instance of vtkConeSource "cone" is part of a
