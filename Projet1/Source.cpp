@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include "System.h"
 
 // First include the required header files for the VTK classes we are using.
 #define vtkRenderingCore_AUTOINIT 4(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingFreeTypeOpenGL,vtkRenderingOpenGL)

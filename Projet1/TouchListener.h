@@ -2,15 +2,27 @@
 
 #ifndef TUIOLISTENER
 #define TUIOLISTENER
-
 #include <iostream>
-#include "TuioClient.h"
-#include "TuioListener.h"
-#include "TuioPoint.h"
+
+#ifdef AVIZ
+	#include "TuioClient.h"
+	#include "TuioListener.h"
+	#include "TuioPoint.h"
+	#include "TuioObject.h"
+	#include "TuioCursor.h"
+	#include "TuioTime.h"
+#else
+
+	#include "./TUIO/TuioClient.h"
+	#include "./TUIO/TuioListener.h"
+	#include "./TUIO/TuioPoint.h"
+	#include "./TUIO/TuioObject.h"
+	#include "./TUIO/TuioCursor.h"
+	#include "./TUIO/TuioTime.h"
+#endif
+
+
 #include "TouchRenderer.h"
-#include "TuioObject.h"
-#include "TuioCursor.h"
-#include "TuioTime.h"
 
 using namespace TUIO;
 

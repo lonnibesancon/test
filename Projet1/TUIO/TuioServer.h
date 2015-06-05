@@ -32,13 +32,20 @@
 #include <iostream>
 #include <list>
 #include <algorithm>
-
-#include "OscOutboundPacketStream.h"
-#include "../ip/NetworkingUtils.h"
-#include "../ip/UdpSocket.h"
-
 #include "TuioObject.h"
 #include "TuioCursor.h"
+
+#ifdef AVIZ
+	#include "OscOutboundPacketStream.h"
+	#include "../ip/NetworkingUtils.h"
+	#include "../ip/UdpSocket.h"
+#else
+	#include "../oscpack/osc/OscOutboundPacketStream.h"
+	#include "../oscpack/ip/NetworkingUtils.h"
+	#include "../oscpack/ip/UdpSocket.h"
+#endif
+
+
 
 #define IP_MTU_SIZE 1500
 #define MAX_UDP_SIZE 65536

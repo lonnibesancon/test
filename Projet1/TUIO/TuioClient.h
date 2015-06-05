@@ -33,16 +33,23 @@
 #include <list>
 #include <algorithm>
 #include <cstring>
-
-#include "OscReceivedElements.h"
-#include "OscPrintReceivedElements.h"
-
-#include "../ip/UdpSocket.h"
-#include "../ip/PacketListener.h"
-
 #include "TuioListener.h"
 #include "TuioObject.h"
 #include "TuioCursor.h"
+
+#ifdef AVIZ
+	#include "OscReceivedElements.h"
+	#include "OscPrintReceivedElements.h"
+	#include "../ip/UdpSocket.h"
+	#include "../ip/PacketListener.h"
+#else
+	#include "../oscpack/osc/OscReceivedElements.h"
+	#include "../oscpack/osc/OscPrintReceivedElements.h"
+	#include "../oscpack/ip/UdpSocket.h"
+	#include "../oscpack/ip/PacketListener.h"
+#endif
+
+
 
 namespace TUIO {
 	

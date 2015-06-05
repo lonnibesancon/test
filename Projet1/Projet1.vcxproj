@@ -90,6 +90,7 @@
     <ClCompile Include="TUIO\TuioTime.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="System.h" />
     <ClInclude Include="oscpack\ip\IpEndpointName.h" />
     <ClInclude Include="oscpack\ip\NetworkingUtils.h" />
     <ClInclude Include="oscpack\ip\PacketListener.h" />
