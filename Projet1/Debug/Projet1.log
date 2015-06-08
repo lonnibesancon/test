@@ -1,14 +1,13 @@
-﻿La génération a démarré 05/06/2015 16:54:07.
+﻿La génération a démarré 05/06/2015 17:25:47.
      1>Projet "C:\Users\Lonni\Documents\Visual Studio 2012\Projects\Project\Projet1\Projet1.vcxproj" sur le nœud 2 (Build cible(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I"C:\Program Files (x86)\VTK\include\vtk-6.2\\" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt Source.cpp TouchListener.cpp
          TouchListener.cpp
          Source.cpp
-     1>c:\users\lonni\documents\visual studio 2012\projects\project\projet1\source.cpp(49): error C2065: 'TuioReceiver' : identificateur non déclaré
-     1>c:\users\lonni\documents\visual studio 2012\projects\project\projet1\source.cpp(49): error C2065: 'tuiothread' : identificateur non déclaré
+     1>c:\users\lonni\documents\visual studio 2012\projects\project\projet1\source.cpp(54): error C2061: erreur de syntaxe : identificateur 'TouchRenderer'
          Génération de code en cours...
      1>Génération du projet "C:\Users\Lonni\Documents\Visual Studio 2012\Projects\Project\Projet1\Projet1.vcxproj" terminée (Build cible(s)) -- ÉCHEC.
 
 ÉCHEC de la build.
 
-Temps écoulé 00:00:04.39
+Temps écoulé 00:00:04.67

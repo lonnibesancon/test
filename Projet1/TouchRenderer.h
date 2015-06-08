@@ -1,7 +1,7 @@
+#pragma once
 #include "TouchPoint.h"
 #include <vector>
 #include <tuple>
-#pragma once
 
 class TouchRenderer
 {

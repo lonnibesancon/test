@@ -21,10 +21,12 @@
 #include "vtkInteractorStyleMultiTouchCamera.h"
 
 #include "TUIO\TuioListener.h"
-#include "TouchListener.h"
 #include "TouchRenderer.h"
+#include "TouchListener.h"
+
 
 using namespace std ;
+
 
 
 class vtkMyCallback : public vtkCommand
@@ -49,9 +51,10 @@ public:
 
 int main()
 {
-	TouchRenderer TouchRenderer = new TouchRenderer();
+	TouchRenderer* TouchRenderer = new TouchRenderer();
 	TouchListener* touchlistener;
 	touchlistener = new TouchListener(TouchRenderer);
+    
   //
   // Next we create an instance of vtkConeSource and set some of its
   // properties. The instance of vtkConeSource "cone" is part of a

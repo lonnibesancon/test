@@ -3,6 +3,8 @@
 #ifndef TUIOLISTENER
 #define TUIOLISTENER
 #include <iostream>
+#include "TouchRenderer.h"
+
 
 #ifdef AVIZ
 	#include "TuioClient.h"
@@ -22,7 +24,7 @@
 #endif
 
 
-#include "TouchRenderer.h"
+
 
 using namespace TUIO;
 

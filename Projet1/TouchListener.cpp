@@ -1,6 +1,7 @@
 #include "TouchListener.h"
 
 using namespace std;
+
 TouchListener::TouchListener(TouchRenderer* tr)
 {
 	touchrenderer = tr ;
