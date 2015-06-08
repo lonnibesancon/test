@@ -50,7 +50,7 @@ int tcp_server::start_listening()
     /* The SOCKADDR_IN structure is used by
  Win Sockets to specify an endpoint address
  to which the socket connects */
-    sockaddr_in service;
+    sockaddr_in service,client ;
     service.sin_family = AF_INET;
     service.sin_port = htons(port);
     service.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -66,14 +66,27 @@ int tcp_server::start_listening()
 
     /* wait for incoming connections */
     if(listen(sSock,10)==SOCKET_ERROR)
-        printf("listen(): Error listening on socket %d.n", WSAGetLastError());
+        printf("listen(): Error listening on socket %d\n", WSAGetLastError());
     else
     {
-        printf("Server: Waiting for connections...n");
+        printf("Server: Waiting for connections...\n");
     }
-    printf("Server: Waiting for a client to connect...n");
+    
     /* accept connections */
+	SOCKET AcceptSocket;
+	printf("Server: Waiting for a client to connect...\n");
+	AcceptSocket = accept(sSock, NULL, NULL);
+    if (AcceptSocket == INVALID_SOCKET) {
+        wprintf(L"accept failed with error: %ld\n", WSAGetLastError());
+        closesocket(sSock);
+        WSACleanup();
+        return 1;
+    } else
+        wprintf(L"Client connected.\n");
+
+    // No longer need server socket
     acceptConns();
+	closesocket(sSock);
     return 0;
 }
 
