@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TOUCH_RENDERER
+#define TOUCH_RENDERER
 #include "TouchPoint.h"
 #include <vector>
 #include <tuple>
@@ -6,8 +7,8 @@
 class TouchRenderer
 {
 public:
-	TouchRenderer(void);
-	~TouchRenderer(void);
+	TouchRenderer();
+	~TouchRenderer();
 
 	std::vector<TouchPoint> touchpoints ;
 
@@ -19,4 +20,5 @@ private:
 	std::vector<std::tuple<int,TouchPoint>> history;
 
 };
+#endif
 

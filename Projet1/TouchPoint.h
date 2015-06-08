@@ -1,5 +1,5 @@
-#pragma once
-
+#ifndef TOUCHPOINT
+#define TOUCHPOINT
 class TouchPoint
 {
 
@@ -12,3 +12,4 @@ public:
 	double curX, curY, prevX, prevY;
 };
 
+#endif
