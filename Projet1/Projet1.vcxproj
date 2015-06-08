@@ -81,6 +81,7 @@
     <ClCompile Include="oscpack\osc\OscPrintReceivedElements.cpp" />
     <ClCompile Include="oscpack\osc\OscReceivedElements.cpp" />
     <ClCompile Include="oscpack\osc\OscTypes.cpp" />
+    <ClCompile Include="Server\tcp_server.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="TouchListener.cpp" />
     <ClCompile Include="TouchPoint.cpp" />
@@ -90,6 +91,7 @@
     <ClCompile Include="TUIO\TuioTime.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Server\tcp_server.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="oscpack\ip\IpEndpointName.h" />
     <ClInclude Include="oscpack\ip\NetworkingUtils.h" />

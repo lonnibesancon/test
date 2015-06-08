@@ -25,6 +25,7 @@
 #include "TouchListener.h"
 
 #include "TouchRenderer.h"
+#include "Server/tcp_server.h"
 
 using namespace std ;
 
@@ -50,11 +51,22 @@ public:
     }
 };
 
+DWORD WINAPI myThread(LPVOID lpParameter)
+{
+	tcp_server* server = (tcp_server*)lpParameter ;
+	server->start_listening();
+	return 0 ;
+}
+
 int main()
 {
 	TouchRenderer* touchRenderer = new TouchRenderer();
 	TouchListener* touchlistener;
 	touchlistener = new TouchListener(touchRenderer);
+
+	tcp_server* server = new tcp_server(8000);
+	HANDLE myHandle = CreateThread(0, 0, myThread, server, 0,NULL);
+	
     
   //
   // Next we create an instance of vtkConeSource and set some of its
