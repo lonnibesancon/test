@@ -13,8 +13,8 @@ public:
 
 protected:
     int port;
-    SOCKET sSock; // Server Socket
-    SOCKET cSock; // Client Socket
+    SOCKET ListenSocket; // Server Socket
+    SOCKET ClientSocket; // Client Socket
 
 private:
     int acceptConns();

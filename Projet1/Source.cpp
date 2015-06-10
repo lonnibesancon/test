@@ -4,6 +4,10 @@
 // First include the required header files for the VTK classes we are using.
 #define vtkRenderingCore_AUTOINIT 4(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingFreeTypeOpenGL,vtkRenderingOpenGL)
 #define vtkRenderingVolume_AUTOINIT 1(vtkRenderingVolumeOpenGL)
+
+#define JETLINES "jetLinesSmall2.vtp"
+#define PARTICLES "particles.vtp"
+#define BUNNY "bunny.vtp"
 #include "vtkConeSource.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkRenderWindow.h"
@@ -19,6 +23,102 @@
 #include "vtkInteractorStyleTrackballActor.h"
 #include "vtkInteractorStyleJoystickActor.h"
 #include "vtkInteractorStyleMultiTouchCamera.h"
+#include "vtkVolumeProperty.h"
+#include "vtkStructuredPointsReader.h"
+
+#include <vtkActor2D.h>
+#include <vtkActorCollection.h>
+#include <vtkAlgorithm.h>
+#include <vtkCollection.h>
+#include <vtkDataReader.h>
+#include <vtkImageAlgorithm.h>
+#include <vtkImageReader2.h>
+#include <vtkMapper.h>
+#include <vtkMoleculeReaderBase.h>
+#include <vtkObject.h>
+#include <vtkObjectBase.h>
+#include <vtkProp3D.h>
+#include <vtkRenderViewBase.h>
+#include <vtkViewport.h>
+#include <vtkVolumeMapper.h>
+#include <vtkWindow.h>
+#include <vtkXMLReader.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkInteractorStyle.h>
+#include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkCamera.h>
+#include <vtkRenderWindow.h>
+#include <vtkWin32OpenGLRenderWindow.h>
+#include <vtkRenderer.h>
+#include <vtkCallbackCommand.h>
+
+#include <vtkActor.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkConeSource.h>
+#include <vtkToolkits.h>
+#include <vtkXMLHierarchicalBoxDataReader.h>
+#include <vtkHierarchicalDataSetGeometryFilter.h>
+#include <vtkShrinkPolyData.h>
+#include <vtkHierarchicalPolyDataMapper.h>
+#include <vtkMultiBlockDataSet.h>
+#include <vtkXMLMultiBlockDataReader.h>
+#include <vtkOBJReader.h>
+#include <vtkTestUtilities.h>
+#include <vtkContextView.h>
+#include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkCubeSource.h>
+#include <vtkLookupTable.h>
+#include <vtkProperty.h>
+#include <vtkGenericDataObjectReader.h>
+#include <vtkDataSetMapper.h>
+#include <vtkBoundingBox.h>
+#include <vtkTextActor.h>
+#include <vtkTextProperty.h>
+#include <vtkTimerLog.h>
+#include <vtkSmartPointer.h>
+#include <vtkHAVSVolumeMapper.h>
+#include <vtkStructuredPointsReader.h>
+#include <vtkSLCReader.h>
+#include <vtkStructuredPoints.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkThreshold.h>
+#include <vtkDataSetTriangleFilter.h>
+#include <vtkPiecewiseFunction.h>
+#include <vtkColorTransferFunction.h>
+#include <vtkVolumeProperty.h>
+#include <vtkVolume.h>
+#include <vtkContourFilter.h>
+#include <vtkPolyDataMapper.h>
+
+//Protein ribbon
+#include <vtkProteinRibbonFilter.h>
+
+#include <vtkVolumeTextureMapper2D.h>
+#include <vtkVolumeTextureMapper3D.h>
+
+#include <vtkXMLPolyDataReader.h>
+#include <vtkPDBReader.h>
+#include <vtkPDBReader.h>
+#include <vtkSphereSource.h>
+#include <vtkTubeFilter.h>
+#include <vtkGlyph3D.h>
+#include <vtkLODActor.h>
+#include <vtkNew.h>
+#include <vtkMoleculeMapper.h>
+#include <vtkLight.h>
+#include <vtkRibbonFilter.h>
+#include <vtkImageReader.h>
+#include <vtkOutlineFilter.h>
+#include <vtkCutter.h>
+#include <vtkPlane.h>
+//Configuration of the multiple passes
+#include <vtkCameraPass.h>
+#include <vtkLightsPass.h>
+#include <vtkOpaquePass.h>
+#include <vtkRenderPassCollection.h>
+#include <vtkSequencePass.h>
+#include <vtkOpenGLRenderer.h>
+#include <vtkImplicitPlaneRepresentation.h>
 
 #include "TUIO\TuioListener.h"
 
@@ -30,6 +130,9 @@
 using namespace std ;
 
 
+vtkSmartPointer<vtkPlane> clipPlane;
+vtkSmartPointer<vtkImplicitPlaneRepresentation> planeRep;
+vtkSmartPointer<vtkActor> actorPlaneSource;
 
 class vtkMyCallback : public vtkCommand
 {
@@ -43,13 +146,21 @@ public:
 	  matrix->SetElement(0,0,2);
 	  matrix->SetElement(1,1,2);
 	  matrix->SetElement(2,2,2);
+	  matrix->SetElement(0,1,0.6);
+	  matrix->SetElement(0,2,0.001);
+	  matrix->SetElement(1,0,-0.6);
+	  matrix->SetElement(1,2,0.02);
+	  matrix->SetElement(2,0,-0.015);
+	  matrix->SetElement(2,1,0.015);
       vtkTransform *t = vtkTransform::New();
-      vtkSphereWidget *widget = reinterpret_cast<vtkSphereWidget*>(caller);
+      vtkBoxWidget *widget = reinterpret_cast<vtkBoxWidget*>(caller);
       //int translation = widget->Get
       widget->GetProp3D()->SetUserMatrix(matrix);
       //t->Delete();
     }
 };
+
+
 
 DWORD WINAPI myThread(LPVOID lpParameter)
 {
@@ -58,8 +169,47 @@ DWORD WINAPI myThread(LPVOID lpParameter)
 	return 0 ;
 }
 
-int main()
+void setupClippingPlane()
 {
+	/*
+	// Define a clipping plane
+	clipPlane = vtkSmartPointer<vtkPlane>::New();
+	clipPlane->SetNormal(0, 0, -1);
+
+	vtkSmartPointer<vtkImageData> box = vtkSmartPointer<vtkImageData>::New();
+	box->SetDimensions(2,2,2);
+	int boxSize = 100000;
+	double origin[3];
+	clipPlane->GetOrigin(origin);
+	origin[0] -= boxSize / 2;
+	origin[1] -= boxSize / 2;
+	origin[2] -= boxSize / 2;
+	box->SetOrigin(origin);
+	box->SetSpacing(boxSize,boxSize,boxSize);
+
+	vtkSmartPointer<vtkOutlineFilter> outline = vtkSmartPointer<vtkOutlineFilter>::New();
+	outline->SetInput(box);
+	vtkSmartPointer<vtkCutter> cutter = vtkSmartPointer<vtkCutter>::New();
+	cutter->SetInput(box);
+	cutter->SetCutFunction(clipPlane);
+
+
+	//vtkSmartPointer<vtkPlaneSource> clipPlaneSource = vtkSmartPointer<vtkPlaneSource>::New();
+	//clipPlaneSource->SetOrigin(0, 0, 60);
+	//clipPlaneSource->SetPoint1(0,60,0);
+	//clipPlaneSource->SetPoint2(60,0,60);
+	// Create a mapper and actor
+	vtkSmartPointer<vtkPolyDataMapper> mapperPlaneSource = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapperPlaneSource->SetInput(cutter->GetOutput());
+
+	actorPlaneSource = vtkSmartPointer<vtkActor>::New();
+	actorPlaneSource->SetMapper(mapperPlaneSource);
+	//ren[0]->AddActor(actorPlaneSource);*/
+}
+
+
+void dummy (){
+
 	TouchRenderer* touchRenderer = new TouchRenderer();
 	TouchListener* touchlistener;
 	touchlistener = new TouchListener(touchRenderer);
@@ -190,6 +340,98 @@ int main()
   renWin->Delete();
   iren->Delete();
   style->Delete();
+
+}
+
+
+
+void read(){
+	/*std::string filename = BUNNY;
+	// Read all the data from the file
+  vtkSmartPointer<vtkXMLPolyDataReader> reader =vtkSmartPointer<vtkXMLPolyDataReader>::New();
+  reader->SetFileName(filename.c_str());
+  reader->Update();
+
+  cout << "File Found and Loaded : " << filename << endl ;
+
+	vtkContourFilter* contour = vtkContourFilter::New();
+	contour->SetValue(0,0.26);
+	contour->SetInputConnection(reader->GetOutputPort());
+ 
+  // Visualize
+	vtkLookupTable* lu = vtkLookupTable::New();
+	lu->SetNumberOfTableValues(256);
+	lu->SetHueRange(0.6667, 0);
+	lu->SetTableRange(0.981, 1.01);
+	lu->Build();
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(reader->GetOutputPort());
+	mapper->SetLookupTable(lu);
+	mapper->SetInterpolateScalarsBeforeMapping(1);
+	mapper->SetScalarMode(VTK_SCALAR_MODE_USE_POINT_FIELD_DATA);
+	mapper->SelectColorArray("RHO");
+	mapper->SetUseLookupTableScalarRange(1);
+
+	// Add ids to the points and cells of the sphere
+	vtkSmartPointer<vtkIdFilter> idFilter = 
+	vtkSmartPointer<vtkIdFilter>::New();
+	idFilter->SetInputConnection(sphereSource->GetOutputPort());
+	idFilter->Update();
+
+	vtkSmartPointer<vtkPlane> plane = vtkSmartPointer<vtkPlane>::New();
+	plane->SetOrigin(0, 0, 0);
+	plane->SetNormal(1, 1, 1); // Convert the DataSet to a GenericDataSet
+	vtkSmartPointer<vtkBridgeDataSet> bridgeDataSet = vtkSmartPointer<vtkBridgeDataSet>::New();
+	bridgeDataSet->SetDataSet(idFilter->GetOutput());
+
+	vtkSmartPointer<vtkGenericClip> clipper =
+	vtkSmartPointer<vtkGenericClip>::New();
+	clipper->SetClipFunction(plane);
+	clipper->SetInputData(bridgeDataSet);
+	clipper->Update();
+
+
+	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+ 
+	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	renderWindow->AddRenderer(renderer);
+	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	renderWindowInteractor->SetRenderWindow(renderWindow);
+ 
+	vtkRenderWindowInteractor *iren = vtkRenderWindowInteractor::New();
+	iren->SetRenderWindow(renderWindow);
+
+	vtkInteractorStyleMultiTouchCamera *style =
+	vtkInteractorStyleMultiTouchCamera::New();
+	iren->SetInteractorStyle(style);
+
+	vtkBoxWidget *boxWidget = vtkBoxWidget::New();
+	boxWidget->SetInteractor(iren);
+	boxWidget->SetPlaceFactor(1.25);
+	vtkMyCallback *callback = vtkMyCallback::New();
+	boxWidget->AddObserver(vtkCommand::InteractionEvent, callback);
+	boxWidget->On();
+
+	renderer->AddActor(actor);
+	renderer->SetBackground(0,0,0); // Background color green
+ 
+	renderWindow->PolygonSmoothingOn();
+	renderWindow->Render();
+	renderWindowInteractor->Start();*/
+}
+
+int main()
+{
+	/*vtkContextView* ctxView = vtkContextView::New();
+	vtkCamera* cam = ctxView->GetRenderer()->GetActiveCamera();
+	ctxView->GetRenderer()->SetBackground(0.0f, 0.0f, 0.0f);
+	vtkRenderWindow *win1 = ctxView->GetRenderWindow();
+	vtkRenderer *ren1= vtkRenderer::New();
+	loadPDBRibbons(ctxView->GetRenderer(), "");
+	ctxView->Render();*/
+	dummy();
 
   return 0;
 }

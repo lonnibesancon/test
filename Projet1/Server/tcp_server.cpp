@@ -26,23 +26,23 @@ int tcp_server::start_listening()
     wsaerr = WSAStartup(wVersionRequested, &wsaData);
     if (wsaerr != 0)
     {
-        printf("Server: The Winsock dll not found!n");
+        printf("Server: The Winsock dll not found!\n");
         WSACleanup();
         return 0;
     }
 
     else
     {
-        printf("Server: The Winsock2 dll foundn");
+        printf("Server: The Winsock2 dll found \n");
     }
     /* SOCKET is simply a UINT, created because
  on Unix sockets are file descriptors(UINT) but not in windows
  so new type SOCKET was created */
-    sSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if(sSock == INVALID_SOCKET)
+    if(ListenSocket == INVALID_SOCKET)
     {
-        printf("Server: Error initializing socket!n");
+        cerr << "Server: Error initializing socket!n" << endl;
         WSACleanup();
         return 0;
     }
@@ -53,19 +53,19 @@ int tcp_server::start_listening()
     sockaddr_in service,client ;
     service.sin_family = AF_INET;
     service.sin_port = htons(port);
-    service.sin_addr.s_addr = inet_addr("127.0.0.1");
+	service.sin_addr.s_addr = INADDR_ANY;
 
     /* bind just links the socket
  with the sockaddr_in struct we initialized */
-    if(bind(sSock,(SOCKADDR*)&service,sizeof(service))==SOCKET_ERROR)
+    if(bind(ListenSocket,(SOCKADDR*)&service,sizeof(service))==SOCKET_ERROR)
     {
-        printf("Server: Error binding socket to portn");
+        printf("Server: Error binding socket to port \n");
         WSACleanup();
         return 0;
     }
 
     /* wait for incoming connections */
-    if(listen(sSock,10)==SOCKET_ERROR)
+    if(listen(ListenSocket,10)==SOCKET_ERROR)
         printf("listen(): Error listening on socket %d\n", WSAGetLastError());
     else
     {
@@ -73,20 +73,22 @@ int tcp_server::start_listening()
     }
     
     /* accept connections */
-	SOCKET AcceptSocket;
+	
 	printf("Server: Waiting for a client to connect...\n");
-	AcceptSocket = accept(sSock, NULL, NULL);
-    if (AcceptSocket == INVALID_SOCKET) {
+	ClientSocket = accept(ListenSocket, NULL, NULL);
+    if (ClientSocket == INVALID_SOCKET) {
         wprintf(L"accept failed with error: %ld\n", WSAGetLastError());
-        closesocket(sSock);
+        closesocket(ListenSocket);
         WSACleanup();
         return 1;
-    } else
+    } else {
         wprintf(L"Client connected.\n");
+		acceptConns();
+
+	}
 
     // No longer need server socket
-    acceptConns();
-	closesocket(sSock);
+    closesocket(ListenSocket);
     return 0;
 }
 
@@ -100,47 +102,44 @@ int tcp_server::acceptConns()
     /* Infinte loop to echo
  the IP address of the client */
 
-	int readsize = 0 ;
-	char* message;
-	char* clientmessage = "\0";
-	string smatrix ;
-	int ind ;
-	string tok;
-	int i = 0 ;
-	int bytesSent ;
+    int readsize;
+    char* message;
+    char* clientmessage = (char*) malloc(2000*sizeof(char));
+    string smatrix ;
+    int ind ;
+    string tok;
+    int i = 0 ;
+    int bytesSent ;
 
-	float matrix[16] ;
+    float matrix[16] ;
+    while( (readsize = recv(ClientSocket, clientmessage, 2000, 0))> 0 ){
+        message = "ack";
+        bytesSent = send(ClientSocket, message, strlen(message),0);
+        if(bytesSent == 0){
+            std::cerr << "Error sending ACK" << endl ;
+        }
+		cout <<"BytesSent" << bytesSent << endl;
+        smatrix = clientmessage ;
+        std::stringstream ss(smatrix);
 
-	while( (readsize = recv(sSock, clientmessage, 2000, 0))> 0 ){
-		message = "ack";
-		bytesSent = send(sSock, message, strlen(message),MSG_DONTROUTE);
-		if(bytesSent = 0){
-			std::cerr << "Error sending ACK" << endl ;
-		}
-		smatrix = clientmessage ;
-		std::stringstream ss(smatrix);
-
-		cout << smatrix << endl ;
-		while(getline(ss, tok, ',') && i < 16 ){
-			matrix[i] = static_cast<float>(::atof(tok.c_str()));
-			i++ ;
-		}
-		i = 0 ;
-	}
-	if(readsize == 0 ){
-		cerr << "client disconnected" << endl ;
-	}
-
-    while (infinite)
-    {
-        char temp[512];
-        cSock = accept(sSock,(SOCKADDR*)&from,&fromlen);
-        std::cout<<"Your IP address is : " << inet_ntoa(from.sin_addr) << std::endl ;
-        send(cSock,temp,strlen(temp),0);
-        std::cout << "Connection from " << inet_ntoa(from.sin_addr) <<"n";
-        closesocket(cSock);
+        
+        while(getline(ss, tok, ',') && i < 16 ){
+            matrix[i] = static_cast<float>(::atof(tok.c_str()));
+            i++ ;
+        }
+		cout << matrix << endl ;
+        i = 0 ;
+		message ="ok";
+		bytesSent = send(ClientSocket, message, strlen(message),0);
+        if(bytesSent == 0){
+            std::cerr << "Error sending ACK" << endl ;
+        }
     }
-    closesocket(sSock);
+    if(readsize == 0 ){
+        cerr << "client disconnected" << endl ;
+    }
+    cout << "Socket closed" << endl ;
+    closesocket(ListenSocket);
     WSACleanup();
-    return 0;
+	return 0 ;
 }
