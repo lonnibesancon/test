@@ -4,15 +4,47 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "../SCProtocol.h"
 
 using namespace std ;
-tcp_server::tcp_server( int port)
+tcp_server::tcp_server( int port, Drawing* d)
 {
     tcp_server::port = port;
+	drawing = d ;
 }
 
 tcp_server::~tcp_server()
 {
+}
+
+void tcp_server::ProcessMessage(float data[]){
+	if(data[0] != CLIENTID ){
+		cerr << "Not a valid ID" << endl ;
+	}
+	else{
+		switch((int)data[1]){
+			case TOUCHROTATION:
+				drawing->rotate(data[2],data[3],data[4]);
+				break;
+			case TOUCHTRANSLATION:
+
+				break;
+			case TOUCHSCALE:
+
+				break;
+			case TANGIBLEROTATION:
+
+				break;
+			case TANGIBLETRANSLATION:
+
+				break;
+			case TANGIBLESCALE:
+
+				break;
+			default:
+				cerr << "Not a valid message type" << endl ;
+		}
+	}
 }
 
 int tcp_server::start_listening()
@@ -104,14 +136,14 @@ int tcp_server::acceptConns()
 
     int readsize;
     char* message;
-    char* clientmessage = (char*) malloc(2000*sizeof(char));
+	char* clientmessage = (char*) malloc(MESSAGESIZE*sizeof(char));
     string smatrix ;
     int ind ;
     string tok;
     int i = 0 ;
     int bytesSent ;
 
-    float matrix[16] ;
+    float matrix[7] ;
     while( (readsize = recv(ClientSocket, clientmessage, 2000, 0))> 0 ){
         message = "ack";
         bytesSent = send(ClientSocket, message, strlen(message),0);
@@ -134,6 +166,7 @@ int tcp_server::acceptConns()
         if(bytesSent == 0){
             std::cerr << "Error sending ACK" << endl ;
         }
+		ProcessMessage(matrix);
     }
     if(readsize == 0 ){
         cerr << "client disconnected" << endl ;

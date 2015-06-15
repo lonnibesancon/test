@@ -74,6 +74,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Drawing.cpp" />
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="oscpack\ip\IpEndpointName.cpp" />
     <ClCompile Include="oscpack\ip\win32\NetworkingUtils.cpp" />
     <ClCompile Include="oscpack\ip\win32\UdpSocket.cpp" />
@@ -91,6 +93,8 @@
     <ClCompile Include="TUIO\TuioTime.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Drawing.h" />
+    <ClInclude Include="SCProtocol.h" />
     <ClInclude Include="Server\tcp_server.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="oscpack\ip\IpEndpointName.h" />
