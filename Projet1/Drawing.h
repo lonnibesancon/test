@@ -4,6 +4,7 @@
 #define vtkRenderingVolume_AUTOINIT 1(vtkRenderingVolumeOpenGL)
 #define vtkRenderingContext2D_AUTOINIT 1(vtkRenderingContextOpenGL)
 
+
 #define JETLINES "jetLinesSmall2.vtp"
 #define PARTICLES "particles.vtp"
 #define BUNNY "bunny.vtp"
@@ -136,6 +137,8 @@ class Drawing
 public:
 	Drawing(void);
 	~Drawing(void);
+
+	/*Drawing related functions*/
 	void rotate(float x, float y, float z);
 	void translate(float x, float y, float z);
 	void scale(float k);
@@ -144,6 +147,10 @@ public:
 	void readOriginal();
 	void dummy();
 	void defineClipping();
+
+	/*Others*/
+	void setFileName(std::string);
+	
 
 
 	vtkSmartPointer<vtkPlane> clipPlane;
@@ -159,6 +166,10 @@ public:
 	vtkCamera* cam ;
 	vtkRenderWindowInteractor *iren;
 	vtkSmartPointer<vtkPolyData> inputPolyData;
+
+protected:
+
+	std::string filename ;
 
 };
 

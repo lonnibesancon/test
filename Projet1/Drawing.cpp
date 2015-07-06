@@ -13,11 +13,16 @@ Drawing::Drawing(void)
 	cam = ren->GetActiveCamera();
 	iren = vtkRenderWindowInteractor::New();
 	ren->SetBackground(.0,.0,.0);
+	filename = BUNNY;
 }
 
 
 Drawing::~Drawing(void)
 {
+}
+
+void Drawing::setFileName(std::string file){
+	Drawing::filename = file ;
 }
 
 void Drawing::scale(float k){
@@ -119,7 +124,6 @@ void Drawing::defineClipping(){
 
 void Drawing::read(){
 
-	std::string filename = BUNNY;
 	// Read all the data from the file
 	vtkSmartPointer<vtkXMLPolyDataReader> reader =vtkSmartPointer<vtkXMLPolyDataReader>::New();
 	reader->SetFileName(filename.c_str());

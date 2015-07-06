@@ -18,6 +18,7 @@ tcp_server::tcp_server( int port, Drawing* d)
 
 tcp_server::~tcp_server()
 {
+	closesocket(ClientSocket);
 	WSACleanup();
 }
 
@@ -76,6 +77,17 @@ void tcp_server::ProcessMessage(float data[]){
 			case TANGIBLESCALE:
 
 				break;
+			case PARTICLESDATASET:
+				tcp_server::drawing->setFileName(PARTICLES);
+				tcp_server::drawing->read();
+				break;
+			case JETLINESDATASET:
+				tcp_server::drawing->setFileName(JETLINES);
+				tcp_server::drawing->read();
+				break;
+			case ENDPROGRAM:
+				tcp_server::hasToClose = true ;
+				break ;
 			default:
 				cerr << "Not a valid message type" << endl ;
 		}

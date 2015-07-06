@@ -6,7 +6,6 @@
 #include "TouchListener.h"
 #include "Drawing.h"
 
-
 TouchRenderer* touchRenderer ;
 TouchListener* touchListener ;
 tcp_server* server ;
@@ -28,19 +27,11 @@ void start(){
 	drawing->read();
 	server = new tcp_server(8000,drawing) ;
 	//HANDLE myHandle = CreateThread(0, 0, myThread, server, 0,NULL);
-	
 	//WaitForMultipleObjects(1, &myHandle, TRUE, INFINITE);
 	server->start_listening();
 
 	while(server->hasToClose == false){
 		server->ProcessIncomingMessage();
-		if(server->getNbOfClients() == 0){
-
-		}
-		else{
-			server->ProcessIncomingMessage();
-			cout << "__________________________________UPDATE__________________________________" << endl ;
-		}
 		drawing->ctxView->Render() ;
 		
 	}
