@@ -10,27 +10,62 @@ using namespace std ;
 tcp_server::tcp_server( int port, Drawing* d)
 {
     tcp_server::port = port;
-	drawing = d ;
+	tcp_server::drawing = d ;
+	tcp_server::hasToClose = false ;
+	tcp_server::nbOfClients = 0 ;
+	initializeWinsock();
 }
 
 tcp_server::~tcp_server()
 {
+	WSACleanup();
 }
 
+void tcp_server::setNbOfClients(int n){
+	nbOfClients = n ;
+}
+
+int tcp_server::getNbOfClients(){
+	return nbOfClients;
+};
+
+ void tcp_server::initializeWinsock(){
+	  /* WSAStartup() initializes
+		 the program to call winsock2.dll */
+	WORD wVersionRequested;
+    WSADATA wsaData;
+    int wsaerr;
+    wVersionRequested = MAKEWORD(2, 2);
+    wsaerr = WSAStartup(wVersionRequested, &wsaData);
+    if (wsaerr != 0)
+    {
+        printf("Server: ERROR FINDING WINSOCK2 dll!\n");
+        WSACleanup();
+        return ;
+    }
+
+    else
+    {
+        printf("Server: The Winsock2 dll was found \n");
+    }
+
+ }
+
 void tcp_server::ProcessMessage(float data[]){
+	cout << data[0] << ";" << data[1] << endl ;
 	if(data[0] != CLIENTID ){
 		cerr << "Not a valid ID" << endl ;
 	}
 	else{
 		switch((int)data[1]){
 			case TOUCHROTATION:
-				drawing->rotate(data[2],data[3],data[4]);
+				drawing->rotateCamera(data[2],data[3],data[4]);
 				break;
 			case TOUCHTRANSLATION:
-
+				drawing->translate(data[2],data[3],data[4]);
 				break;
 			case TOUCHSCALE:
-
+				drawing->scale(data[2]);
 				break;
 			case TANGIBLEROTATION:
 
@@ -49,36 +84,26 @@ void tcp_server::ProcessMessage(float data[]){
 
 int tcp_server::start_listening()
 {
-    /* WSAStartup() initializes
- the program to call winsock2.dll */
-    WORD wVersionRequested;
-    WSADATA wsaData;
-    int wsaerr;
-    wVersionRequested = MAKEWORD(2, 2);
-    wsaerr = WSAStartup(wVersionRequested, &wsaData);
-    if (wsaerr != 0)
-    {
-        printf("Server: The Winsock dll not found!\n");
-        WSACleanup();
-        return 0;
-    }
 
-    else
-    {
-        printf("Server: The Winsock2 dll found \n");
-    }
+
+   
     /* SOCKET is simply a UINT, created because
  on Unix sockets are file descriptors(UINT) but not in windows
  so new type SOCKET was created */
-    ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
+    //ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	ListenSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	unsigned long mode = 1;
+	ioctlsocket(ListenSocket, FIONBIO, &mode);
     if(ListenSocket == INVALID_SOCKET)
     {
-        cerr << "Server: Error initializing socket!n" << endl;
+        cerr << "Server: Error initializing socket\n" << endl;
         WSACleanup();
         return 0;
     }
 
+	//Non-Blocking
+	//unsigned long mode = 1;
+	//ioctlsocket(ListenSocket, FIONBIO, &mode);
     /* The SOCKADDR_IN structure is used by
  Win Sockets to specify an endpoint address
  to which the socket connects */
@@ -87,14 +112,28 @@ int tcp_server::start_listening()
     service.sin_port = htons(port);
 	service.sin_addr.s_addr = INADDR_ANY;
 
+	SOCKADDR_IN srvAddress;
+	int srvLen = sizeof(srvAddress);
+	memset( &srvAddress, 0, srvLen);
+	srvAddress.sin_family = AF_INET;
+	srvAddress.sin_addr.s_addr = INADDR_ANY;
+	srvAddress.sin_port = htons(8000);
+	
+	drawing->rotate(0,0,0);
+	drawing->rotate(0,0,0);
+	drawing->translate(0,0,-0.4);
+	drawing->scale(0.5);
+
     /* bind just links the socket
  with the sockaddr_in struct we initialized */
-    if(bind(ListenSocket,(SOCKADDR*)&service,sizeof(service))==SOCKET_ERROR)
+	if(bind(ListenSocket,(LPSOCKADDR) &srvAddress,sizeof(srvAddress))==SOCKET_ERROR)
     {
         printf("Server: Error binding socket to port \n");
         WSACleanup();
         return 0;
     }
+
+	return 1 ;
 
     /* wait for incoming connections */
     if(listen(ListenSocket,10)==SOCKET_ERROR)
@@ -128,6 +167,7 @@ int tcp_server::start_listening()
  of the server change the following function... */
 int tcp_server::acceptConns()
 {
+	
     sockaddr_in from;
 	bool infinite = true ;
     int fromlen=sizeof(from);
@@ -142,6 +182,7 @@ int tcp_server::acceptConns()
     string tok;
     int i = 0 ;
     int bytesSent ;
+
 
     float matrix[7] ;
     while( (readsize = recv(ClientSocket, clientmessage, 2000, 0))> 0 ){
@@ -175,4 +216,50 @@ int tcp_server::acceptConns()
     closesocket(ListenSocket);
     WSACleanup();
 	return 0 ;
+}
+
+void tcp_server::ProcessIncomingMessage(){
+	int readsize;
+    char* message;
+	char* clientmessage = (char*) malloc(MESSAGESIZE*sizeof(char));
+    string smatrix ;
+    int ind ;
+    string tok;
+    int i = 0 ;
+    int bytesSent ;
+	SOCKADDR from;
+	int addrLen = sizeof(SOCKADDR);
+	int bytes = 0;
+	float matrix[7] ;
+	do{
+		bytes = recvfrom(ListenSocket, clientmessage, MESSAGESIZE, 0, (SOCKADDR*) &from, &addrLen);
+		if(bytes <= 0){
+#ifdef DEBUG
+			cout << " Nothing received : " << WSAGetLastError() << endl ;
+#endif
+			break; 
+		}
+		message = "ack";
+        bytesSent = send(ClientSocket, message, strlen(message),0);
+        if(bytesSent == 0){
+            std::cerr << "Error sending ACK" << endl ;
+        }
+		cout <<"BytesSent" << bytesSent << endl;
+        smatrix = clientmessage ;
+        std::stringstream ss(smatrix);
+
+        
+        while(getline(ss, tok, ',') && i < 16 ){
+            matrix[i] = static_cast<float>(::atof(tok.c_str()));
+            i++ ;
+        }
+		cout << matrix << endl ;
+        i = 0 ;
+		message ="ok";
+		bytesSent = send(ClientSocket, message, strlen(message),0);
+        if(bytesSent == 0){
+            std::cerr << "Error sending ACK" << endl ;
+        }
+		ProcessMessage(matrix);
+	}while( bytes > 0 );
 }

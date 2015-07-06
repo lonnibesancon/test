@@ -15,22 +15,35 @@ Drawing* drawing ;
 
 DWORD WINAPI myThread(LPVOID lpParameter)
 {
-	tcp_server* server = (tcp_server*)lpParameter ;
 	server->start_listening();
 	return 0 ;
 }
 
 
 void start(){
-	int a ;
+
 	touchRenderer = new TouchRenderer();
 	touchListener = new TouchListener(touchRenderer);
 	drawing = new Drawing();
-	server = new tcp_server(8000,drawing);
-	HANDLE myHandle = CreateThread(0, 0, myThread, server, 0,NULL);
-
 	drawing->read();
+	server = new tcp_server(8000,drawing) ;
+	//HANDLE myHandle = CreateThread(0, 0, myThread, server, 0,NULL);
+	
+	//WaitForMultipleObjects(1, &myHandle, TRUE, INFINITE);
+	server->start_listening();
 
+	while(server->hasToClose == false){
+		server->ProcessIncomingMessage();
+		if(server->getNbOfClients() == 0){
+
+		}
+		else{
+			server->ProcessIncomingMessage();
+			cout << "__________________________________UPDATE__________________________________" << endl ;
+		}
+		drawing->ctxView->Render() ;
+		
+	}
 }
 
 int main()
@@ -43,6 +56,7 @@ int main()
 	loadPDBRibbons(ctxView->GetRenderer(), "");
 	ctxView->Render();*/
 	start();
+
   return 0;
 }
 

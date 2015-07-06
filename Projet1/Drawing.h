@@ -126,6 +126,10 @@
 #include <vtkTransformFilter.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
+#include <vtkMath.h>
+#include <vtkVector.h>
+#include <vtkTransformPolyDataFilter.h>
+#include <vtkClipPolyData.h>
 
 class Drawing
 {
@@ -135,11 +139,13 @@ public:
 	void rotate(float x, float y, float z);
 	void translate(float x, float y, float z);
 	void scale(float k);
+	void rotateCamera(float x, float y, float z);
 	void read();
 	void readOriginal();
 	void dummy();
+	void defineClipping();
 
-private:
+
 	vtkSmartPointer<vtkPlane> clipPlane;
 	vtkSmartPointer<vtkImplicitPlaneRepresentation> planeRep;
 	vtkSmartPointer<vtkActor> actorPlaneSource;
@@ -151,6 +157,8 @@ private:
 	vtkRenderWindow* win ;
 	vtkRenderer* ren ;
 	vtkCamera* cam ;
+	vtkRenderWindowInteractor *iren;
+	vtkSmartPointer<vtkPolyData> inputPolyData;
 
 };
 

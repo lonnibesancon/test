@@ -9,12 +9,18 @@ class tcp_server
 {
 
 public:
+	bool hasToClose ;
     tcp_server(int port, Drawing* d);
     virtual ~tcp_server();
     int start_listening();
+	void initializeWinsock();
+	void ProcessIncomingMessage();
+	int getNbOfClients();
+	void setNbOfClients(int n);
 
 protected:
     int port;
+	int nbOfClients ;
     SOCKET ListenSocket; // Server Socket
     SOCKET ClientSocket; // Client Socket
 	Drawing* drawing ;

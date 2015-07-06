@@ -1,5 +1,8 @@
 #include "Drawing.h"
 
+vtkConeSource *cone ;
+vtkPolyDataMapper *mapper ;
+vtkSmartPointer<vtkTransformFilter> transformFilter;
 
 Drawing::Drawing(void)
 {
@@ -8,7 +11,7 @@ Drawing::Drawing(void)
 	win = ctxView->GetRenderWindow();
 	ren = ctxView->GetRenderer();
 	cam = ren->GetActiveCamera();
-
+	iren = vtkRenderWindowInteractor::New();
 	ren->SetBackground(.0,.0,.0);
 }
 
@@ -17,14 +20,79 @@ Drawing::~Drawing(void)
 {
 }
 
+void Drawing::scale(float k){
+	//vtkSmartPointer<vtkTransform> transform =vtkSmartPointer<vtkTransform>::New();
+	//transform->Scale(5,1,1);
+	//vtkSmartPointer<vtkTransformFilter> transformFilter = vtkSmartPointer<vtkTransformFilter>::New();
+	//transformFilter->SetInputConnection(cone->GetOutputPort());
+	//transformFilter->SetTransform(transform);
+	//mapper->SetInputConnection(transformFilter->GetOutputPort());
+	mainActor->SetScale(k);
+	ren->Render();
+}
+
+void Drawing::translate(float x, float y, float z){
+	cout << "Translate: " << x << " - " << " - " << y << " - " << z << endl ;
+	vtkSmartPointer<vtkTransform> transform1a = vtkSmartPointer<vtkTransform>::New();
+	//transform1a->Translate(x,y,z);
+	//transformFilter->SetTransform(transform1a);
+	//transformFilter->Update();
+	double* position = mainActor->GetPosition();
+	mainActor->SetPosition(position[0]+x,position[1]+y,position[2]+z);
+	ren->Render();
+}
 
 void Drawing::rotate(float x, float y, float z){
 	cout << "Rotate: " << x << " - " << " - " << y << " - " << z << endl ;
-	mainActor->RotateX(x);
-	mainActor->RotateY(y);
-	mainActor->RotateZ(z);
-	vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
-	transform->PostMultiply();
+	vtkSmartPointer<vtkTransform> transform1a = vtkSmartPointer<vtkTransform>::New();
+	//transform1a->PostMultiply();
+	//transform1a->RotateX(x);
+	//transform1a->RotateY(y);
+	//transform1a->RotateZ(z);
+	//mainActor->SetUserTransform(transform1a);
+	mainActor->RotateWXYZ(20,1,0,0);
+	ren->Render();
+}
+
+void Drawing::rotateCamera(float x, float y, float z){
+	vtkCamera* camera = ctxView->GetRenderer()->GetActiveCamera();
+
+	camera->Yaw(x);
+	camera->Pitch(y);
+	camera->Roll(z);
+
+	//camera->UpdateViewport();
+}
+
+void Drawing::defineClipping(){
+
+	 // Define a clipping plane
+	vtkSmartPointer<vtkPlane> clipPlane = vtkSmartPointer<vtkPlane>::New();
+	clipPlane->SetNormal(1.0, 1.0, 0.0);
+	clipPlane->SetOrigin(0.0, 0.0, 0.0);
+	// Clip the source with the plane
+	vtkSmartPointer<vtkClipPolyData> clipper = vtkSmartPointer<vtkClipPolyData>::New();
+	clipper->SetInputData(inputPolyData);
+	clipper->SetClipFunction(clipPlane);  
+	clipper->Update();
+	//Create a mapper and actor
+	vtkSmartPointer<vtkPolyDataMapper> superquadricMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	superquadricMapper->SetInputConnection(clipper->GetOutputPort());
+	vtkSmartPointer<vtkActor> superquadricActor = vtkSmartPointer<vtkActor>::New();
+	superquadricActor->SetMapper(superquadricMapper);
+	vtkSmartPointer<vtkProperty> backFaces = vtkSmartPointer<vtkProperty>::New();
+	backFaces->SetSpecular(0.0);
+	backFaces->SetDiffuse(0.0);
+	backFaces->SetAmbient(1.0);
+	backFaces->SetAmbientColor(1.0000, 0.3882, 0.2784);
+	superquadricActor->GetProperty()->SetColor(0,1,0);
+	superquadricActor->SetBackfaceProperty(backFaces);
+	// Create a renderer
+	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+	//Add actors to the renderers
+	renderer->AddActor(superquadricActor);
+	win->AddRenderer(renderer);
+	//win->Render();
 }
 
 /*int rotate_camera( vtkContextView* env){
@@ -56,20 +124,43 @@ void Drawing::read(){
 	vtkSmartPointer<vtkXMLPolyDataReader> reader =vtkSmartPointer<vtkXMLPolyDataReader>::New();
 	reader->SetFileName(filename.c_str());
 	reader->Update();
+	inputPolyData = reader->GetOutput();
 
 	cout << "File Found and Loaded : " << filename << endl ;
 
+	vtkSmartPointer<vtkTransform> translation = vtkSmartPointer<vtkTransform>::New();
+	translation->Translate(0.3, -0.05, 0);
+	transformFilter = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+	//transformFilter->SetInputConnection(reader->GetOutputPort());
+	transformFilter->SetInputData(inputPolyData);
+	transformFilter->SetTransform(translation);
+	//transformFilter->Update();
+
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(reader->GetOutputPort());
+	mapper->SetInputConnection(transformFilter->GetOutputPort());
 
 	mainActor = vtkSmartPointer<vtkActor>::New();
 	mainActor->SetMapper(mapper);
 
 	ren->AddActor(mainActor);
- 
+
+	iren->SetRenderWindow(win);
+	vtkInteractorStyleMultiTouchCamera *style =
+	vtkInteractorStyleMultiTouchCamera::New();
+	iren->SetInteractorStyle(style);
+	
+	//Start the event loop
+	iren->Initialize();
+	//iren->Start();
+
+	//defineClipping();
 	win->PolygonSmoothingOn();
 	win->Render();
 	win->Start();
+
+	ctxView->Render();
+
+	
 }
 
 void Drawing::readOriginal(){
@@ -157,7 +248,7 @@ void Drawing::dummy (){
 	// visualization pipeline (it is a source process object); it produces data
 	// (output type is vtkPolyData) which other filters may process.
 	//
-	vtkConeSource *cone = vtkConeSource::New();
+	cone = vtkConeSource::New();
 	cone->SetHeight( 3.0 );
 	cone->SetRadius( 1.0 );
 	cone->SetResolution( 10 );
@@ -169,8 +260,8 @@ void Drawing::dummy (){
 	// vtkPolyDataMapper to map the polygonal data into graphics primitives. We
 	// connect the output of the cone souece to the input of this mapper.
 	//
-	vtkPolyDataMapper *coneMapper = vtkPolyDataMapper::New();
-	coneMapper->SetInputConnection( cone->GetOutputPort() );
+	mapper = vtkPolyDataMapper::New();
+	mapper->SetInputConnection( cone->GetOutputPort() );
 
 	//
 	// Create an actor to represent the cone. The actor orchestrates rendering
@@ -179,8 +270,8 @@ void Drawing::dummy (){
 	// matrix. We set this actor's mapper to be coneMapper which we created
 	// above.
 	//
-	vtkActor *coneActor = vtkActor::New();
-	coneActor->SetMapper( coneMapper );
+	mainActor = vtkActor::New();
+	mainActor->SetMapper( mapper );
 
 	//
 	// Create the Renderer and assign actors to it. A renderer is like a
@@ -188,18 +279,18 @@ void Drawing::dummy (){
 	// responsible for drawing the actors it has.  We also set the background
 	// color here.
 	//
-	vtkRenderer *ren1= vtkRenderer::New();
-	ren1->AddActor( coneActor );
-	ren1->SetBackground( 0.1, 0.2, 0.4 );
+	ren = vtkRenderer::New();
+	ren->AddActor( mainActor );
+	ren->SetBackground( 0.1, 0.2, 0.4 );
 
 	//
 	// Finally we create the render window which will show up on the screen.
 	// We put our renderer into the render window using AddRenderer. We also
 	// set the size to be 300 pixels by 300.
 	//
-	vtkRenderWindow *renWin = vtkRenderWindow::New();
-	renWin->AddRenderer( ren1 );
-	renWin->SetSize( 300, 300 );
+	win = vtkRenderWindow::New();
+	win->AddRenderer( ren );
+	win->SetSize( 300, 300 );
 
 	//
 	// The vtkRenderWindowInteractor class watches for events (e.g., keypress,
@@ -208,7 +299,7 @@ void Drawing::dummy (){
 	// for all events that VTK processes). Then observers of these VTK
 	// events can process them as appropriate.
 	vtkRenderWindowInteractor *iren = vtkRenderWindowInteractor::New();
-	iren->SetRenderWindow(renWin);
+	iren->SetRenderWindow(win);
 
 	//
 	// By default the vtkRenderWindowInteractor instantiates an instance
@@ -230,12 +321,12 @@ void Drawing::dummy (){
 	// using the Command/Observer mechanism (AddObserver()). The place factor
 	// controls the initial size of the widget with respect to the bounding box
 	// of the input to the widget.
-	vtkBoxWidget *boxWidget = vtkBoxWidget::New();
+	/*vtkBoxWidget *boxWidget = vtkBoxWidget::New();
 	boxWidget->SetInteractor(iren);
 	boxWidget->SetPlaceFactor(1.25);
 	vtkSphereWidget *sphereWidget = vtkSphereWidget::New();
 	sphereWidget->SetInteractor(iren);
-	sphereWidget->SetProp3D(coneActor);
+	sphereWidget->SetProp3D(mainActor);
 	sphereWidget->PlaceWidget();
 	vtkMyCallback *callback = vtkMyCallback::New();
 	sphereWidget->AddObserver(vtkCommand::InteractionEvent, callback);
@@ -257,6 +348,7 @@ void Drawing::dummy (){
 	//
 	// Start the event loop.
 	//
+	*/
 	iren->Initialize();
 	iren->Start();
 
@@ -265,12 +357,12 @@ void Drawing::dummy (){
 	// using the Delete() method.
 	//
 	cone->Delete();
-	coneMapper->Delete();
-	coneActor->Delete();
-	callback->Delete();
-	boxWidget->Delete();
-	ren1->Delete();
-	renWin->Delete();
+	mapper->Delete();
+	mainActor->Delete();
+	//callback->Delete();
+	//boxWidget->Delete();
+	ren->Delete();
+	win->Delete();
 	iren->Delete();
 	style->Delete();
 
