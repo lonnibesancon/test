@@ -11,22 +11,26 @@ class tcp_server
 public:
 	bool hasToClose ;
     tcp_server(int port, Drawing* d);
+
     virtual ~tcp_server();
-    int start_listening();
+    //int start_listening1();
+	int start_listening();
 	void initializeWinsock();
-	void ProcessIncomingMessage();
+	//void ProcessIncomingMessage();
+	void waitForMessage();
 	int getNbOfClients();
+	void sendMessage();
 	void setNbOfClients(int n);
 
 protected:
     int port;
 	int nbOfClients ;
     SOCKET ListenSocket; // Server Socket
-    SOCKET ClientSocket; // Client Socket
+    SOCKET SendSocket; // Client Socket
 	Drawing* drawing ;
 
 private:
-    int acceptConns();
+    //int acceptConns();
 	void ProcessMessage(float data[]);
 
 };

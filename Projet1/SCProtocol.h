@@ -3,8 +3,8 @@
 
 
 
-#define SERVERPORT 8000
-#define MESSAGESIZE 128
+#define SERVERPORT 8500
+#define MESSAGESIZE 256
 #define CLIENTID 1111
 
 #define NONEWEVENT 0
@@ -26,6 +26,9 @@
 
 #define RESETVIEW 40
 
+#define MATRIXCHANGED 1
+
 #define ENDPROGRAM -1
+
 
 #endif

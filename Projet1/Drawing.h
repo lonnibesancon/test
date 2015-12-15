@@ -91,6 +91,7 @@
 #include <vtkVolume.h>
 #include <vtkContourFilter.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkGenericRenderWindowInteractor.h>
 
 //Protein ribbon
 #include <vtkProteinRibbonFilter.h>
@@ -131,6 +132,38 @@
 #include <vtkVector.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkClipPolyData.h>
+#include <vtkSampleFunction.h>
+#include <vtkIdTypeArray.h>
+#include <vtkIdFilter.h>
+#include <vtkGPUVolumeRayCastMapper.h>
+#include <vtkImplicitPlaneWidget2.h>
+
+
+//Doublons possibles
+#include <vtkActor.h>
+#include <vtkBridgeDataSet.h> // Must build VTK with BUILD_TESTING=ON
+#include <vtkCellData.h>
+#include <vtkContourFilter.h>
+#include <vtkDataSetMapper.h>
+#include <vtkDelaunay3D.h>
+#include <vtkElevationFilter.h>
+#include <vtkGenericClip.h>
+#include <vtkImageData.h>
+#include <vtkImplicitDataSet.h>
+#include <vtkIdFilter.h>
+#include <vtkIdTypeArray.h>
+#include <vtkSphereSource.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkProperty.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkSampleFunction.h>
+#include <vtkSmartPointer.h>
+#include <vtkPlane.h>
+#include <vtkUnstructuredGrid.h>
+
+#include "myInteractorStyle.h"
 
 class Drawing
 {
@@ -147,16 +180,22 @@ public:
 	void readOriginal();
 	void dummy();
 	void defineClipping();
+	void updateView();
+	void setTransformationMatrix(const double* mat);
+	void setCuttingPlane();
 
 	/*Others*/
 	void setFileName(std::string);
 	
 
 
-	vtkSmartPointer<vtkPlane> clipPlane;
+	/*vtkSmartPointer<vtkPlane> clipPlane;
 	vtkSmartPointer<vtkImplicitPlaneRepresentation> planeRep;
-	vtkSmartPointer<vtkActor> actorPlaneSource;
+	vtkSmartPointer<vtkActor> actorPlaneSource;*/
+
 	vtkSmartPointer<vtkActor> mainActor;
+	vtkSmartPointer<vtkXMLPolyDataReader> reader ;
+	vtkSmartPointer<vtkPolyData> inputPolyData;
 
 	vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter;
 	vtkSmartPointer<vtkTransform> translation ;
@@ -165,7 +204,14 @@ public:
 	vtkRenderer* ren ;
 	vtkCamera* cam ;
 	vtkRenderWindowInteractor *iren;
-	vtkSmartPointer<vtkPolyData> inputPolyData;
+	
+	vtkSmartPointer<vtkInteractorStyleTrackballActor> style ;
+
+	//For the clipping plane
+	vtkSmartPointer<vtkPlane> plane ;
+	vtkSmartPointer<vtkClipPolyData> clipper ;
+	vtkSmartPointer<vtkImplicitPlaneWidget2> planeWidget ;
+	vtkSmartPointer<vtkImplicitPlaneRepresentation> planerep ;
 
 protected:
 

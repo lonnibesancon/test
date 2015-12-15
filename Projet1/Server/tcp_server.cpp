@@ -18,8 +18,8 @@ tcp_server::tcp_server( int port, Drawing* d)
 
 tcp_server::~tcp_server()
 {
-	closesocket(ClientSocket);
-	WSACleanup();
+	closesocket(ListenSocket);
+    WSACleanup();
 }
 
 void tcp_server::setNbOfClients(int n){
@@ -49,7 +49,6 @@ int tcp_server::getNbOfClients(){
     {
         printf("Server: The Winsock2 dll was found \n");
     }
-
  }
 
 void tcp_server::ProcessMessage(float data[]){
@@ -94,184 +93,122 @@ void tcp_server::ProcessMessage(float data[]){
 	}
 }
 
-int tcp_server::start_listening()
-{
 
 
-   
-    /* SOCKET is simply a UINT, created because
- on Unix sockets are file descriptors(UINT) but not in windows
- so new type SOCKET was created */
-    //ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	ListenSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	unsigned long mode = 1;
-	ioctlsocket(ListenSocket, FIONBIO, &mode);
-    if(ListenSocket == INVALID_SOCKET)
+int tcp_server::start_listening(){
+    sockaddr_in server ;
+
+    //Initialise winsock
+/*  printf("\nInitialising Winsock...");
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
     {
-        cerr << "Server: Error initializing socket\n" << endl;
-        WSACleanup();
-        return 0;
+        printf("Failed. Error Code : %d",WSAGetLastError());
+        exit(EXIT_FAILURE);
     }
+    printf("Initialised.\n");*/
+     
+    //Create a socket
+    if((ListenSocket = socket(AF_INET , SOCK_DGRAM , 0 )) == INVALID_SOCKET)
+    {
+        printf("Could not create socket : %d" , WSAGetLastError());
+    }
+    printf("Socket created.\n");
 
-	//Non-Blocking
+
+	//Make non blocking
+	//ListenSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	//unsigned long mode = 1;
 	//ioctlsocket(ListenSocket, FIONBIO, &mode);
-    /* The SOCKADDR_IN structure is used by
- Win Sockets to specify an endpoint address
- to which the socket connects */
-    sockaddr_in service,client ;
-    service.sin_family = AF_INET;
-    service.sin_port = htons(port);
-	service.sin_addr.s_addr = INADDR_ANY;
-
-	SOCKADDR_IN srvAddress;
-	int srvLen = sizeof(srvAddress);
-	memset( &srvAddress, 0, srvLen);
-	srvAddress.sin_family = AF_INET;
-	srvAddress.sin_addr.s_addr = INADDR_ANY;
-	srvAddress.sin_port = htons(8000);
-	
-	drawing->rotate(0,0,0);
-	drawing->rotate(0,0,0);
-	drawing->translate(0,0,-0.4);
-	drawing->scale(0.5);
-
-    /* bind just links the socket
- with the sockaddr_in struct we initialized */
-	if(bind(ListenSocket,(LPSOCKADDR) &srvAddress,sizeof(srvAddress))==SOCKET_ERROR)
+     
+    //Prepare the sockaddr_in structure
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons( port );
+     
+    //Bind
+    if( bind(ListenSocket ,(struct sockaddr *)&server , sizeof(server)) == SOCKET_ERROR)
     {
-        printf("Server: Error binding socket to port \n");
-        WSACleanup();
-        return 0;
+        printf("Bind failed with error code : %d" , WSAGetLastError());
+        exit(EXIT_FAILURE);
     }
-
-	return 1 ;
-
-    /* wait for incoming connections */
-    if(listen(ListenSocket,10)==SOCKET_ERROR)
-        printf("listen(): Error listening on socket %d\n", WSAGetLastError());
-    else
-    {
-        printf("Server: Waiting for connections...\n");
-    }
-    
-    /* accept connections */
-	
-	printf("Server: Waiting for a client to connect...\n");
-	ClientSocket = accept(ListenSocket, NULL, NULL);
-    if (ClientSocket == INVALID_SOCKET) {
-        wprintf(L"accept failed with error: %ld\n", WSAGetLastError());
-        closesocket(ListenSocket);
-        WSACleanup();
-        return 1;
-    } else {
-        wprintf(L"Client connected.\n");
-		acceptConns();
-
-	}
-
-    // No longer need server socket
-    closesocket(ListenSocket);
-    return 0;
+    puts("Bind done");
+ 
+   
 }
 
-/* TODO: To change functionality
- of the server change the following function... */
-int tcp_server::acceptConns()
-{
-	
-    sockaddr_in from;
-	bool infinite = true ;
-    int fromlen=sizeof(from);
-    /* Infinte loop to echo
- the IP address of the client */
+void tcp_server::waitForMessage(){
 
-    int readsize;
-    char* message;
-	char* clientmessage = (char*) malloc(MESSAGESIZE*sizeof(char));
-    string smatrix ;
-    int ind ;
-    string tok;
-    int i = 0 ;
-    int bytesSent ;
+	int slen , recv_len;
+    char buf[MESSAGESIZE];
+	sockaddr_in si_other;
+	slen = sizeof(si_other) ;	//Get error 10014 winsock if not done
 
-
-    float matrix[7] ;
-    while( (readsize = recv(ClientSocket, clientmessage, 2000, 0))> 0 ){
-        message = "ack";
-        bytesSent = send(ClientSocket, message, strlen(message),0);
-        if(bytesSent == 0){
-            std::cerr << "Error sending ACK" << endl ;
+	//keep listening for data
+    //while(1)
+    //{
+        //printf("Waiting for data...");
+        fflush(stdout);
+         
+        //clear the buffer by filling null, it might have previously received data
+        memset(buf,'\0', MESSAGESIZE);
+         
+        //try to receive some data, this is a blocking call
+        if ((recv_len = recvfrom(ListenSocket, buf, MESSAGESIZE, 0, (struct sockaddr *) &si_other, &slen)) == SOCKET_ERROR)
+        {
+            printf("recvfrom() failed with error code : %d" , WSAGetLastError());
+			getchar();
+            exit(EXIT_FAILURE);
         }
-		cout <<"BytesSent" << bytesSent << endl;
-        smatrix = clientmessage ;
-        std::stringstream ss(smatrix);
 
+        //print details of the client/peer and the data received
+        //printf("Received packet from %s:%d\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
+        //printf("Data: %s\n" , buf);
+		string msg = buf ;
+		std::stringstream ss(msg);
+		int i = 0 ;
+		string tok;
+		double matrix[16] ;
+		int msgtype ;
+		//cout << "Line : " << msg << endl ;
+		while(getline(ss, tok, ';') && i < 17 ){
+			if(i==0){
+				msgtype = atoi(tok.c_str());
+				
+			}
+			else{
+				//matrix[i] = static_cast<float>(::atof(tok.c_str()));
+				matrix[i-1] = stod(tok.c_str());
+				//cout << matrix[i] << ";" ;
+				
+			}
+			i++ ;
+        }
+		drawing->setTransformationMatrix(matrix);
         
-        while(getline(ss, tok, ',') && i < 16 ){
-            matrix[i] = static_cast<float>(::atof(tok.c_str()));
-            i++ ;
-        }
-		cout << matrix << endl ;
-        i = 0 ;
-		message ="ok";
-		bytesSent = send(ClientSocket, message, strlen(message),0);
-        if(bytesSent == 0){
-            std::cerr << "Error sending ACK" << endl ;
-        }
-		ProcessMessage(matrix);
-    }
-    if(readsize == 0 ){
-        cerr << "client disconnected" << endl ;
-    }
-    cout << "Socket closed" << endl ;
-    closesocket(ListenSocket);
+		
+    //}
+ 
+    /*closesocket(s);
     WSACleanup();
-	return 0 ;
+     
+    return 0;*/
+
 }
 
-void tcp_server::ProcessIncomingMessage(){
-	int readsize;
-    char* message;
-	char* clientmessage = (char*) malloc(MESSAGESIZE*sizeof(char));
-    string smatrix ;
-    int ind ;
-    string tok;
-    int i = 0 ;
-    int bytesSent ;
-	SOCKADDR from;
-	int addrLen = sizeof(SOCKADDR);
-	int bytes = 0;
-	float matrix[7] ;
-	do{
-		bytes = recvfrom(ListenSocket, clientmessage, MESSAGESIZE, 0, (SOCKADDR*) &from, &addrLen);
-		if(bytes <= 0){
-#ifdef DEBUG
-			cout << " Nothing received : " << WSAGetLastError() << endl ;
-#endif
-			break; 
-		}
-		message = "ack";
-        bytesSent = send(ClientSocket, message, strlen(message),0);
-        if(bytesSent == 0){
-            std::cerr << "Error sending ACK" << endl ;
-        }
-		cout <<"BytesSent" << bytesSent << endl;
-        smatrix = clientmessage ;
-        std::stringstream ss(smatrix);
 
-        
-        while(getline(ss, tok, ',') && i < 16 ){
-            matrix[i] = static_cast<float>(::atof(tok.c_str()));
-            i++ ;
-        }
-		cout << matrix << endl ;
-        i = 0 ;
-		message ="ok";
-		bytesSent = send(ClientSocket, message, strlen(message),0);
-        if(bytesSent == 0){
-            std::cerr << "Error sending ACK" << endl ;
-        }
-		ProcessMessage(matrix);
-	}while( bytes > 0 );
+void tcp_server::sendMessage(){
+	int slen , send_len;
+    char buf[MESSAGESIZE];
+	sockaddr_in si_other;
+	slen = sizeof(si_other) ;	//Get error 10014 winsock if not done
+
+	send_len = MESSAGESIZE ;
+
+	if (sendto(ListenSocket, buf, send_len, 0, (struct sockaddr*) &si_other, slen) == SOCKET_ERROR)
+	{
+		printf("sendto() failed with error code : %d" , WSAGetLastError());
+		exit(EXIT_FAILURE);
+	}
 }
+
+

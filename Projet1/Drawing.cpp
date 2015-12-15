@@ -4,9 +4,31 @@ vtkConeSource *cone ;
 vtkPolyDataMapper *mapper ;
 vtkSmartPointer<vtkTransformFilter> transformFilter;
 
+// Callback for the interaction with the clipping plane
+// This does the actual work: updates the vtkPlane implicit function.
+// This in turn causes the pipeline to update and clip the object.
+class vtkIPWCallback : public vtkCommand
+{
+public:
+  static vtkIPWCallback *New() 
+    { return new vtkIPWCallback; }
+  virtual void Execute(vtkObject *caller, unsigned long, void*)
+    {
+    vtkImplicitPlaneWidget2 *planeWidget = 
+      reinterpret_cast<vtkImplicitPlaneWidget2*>(caller);
+    vtkImplicitPlaneRepresentation *rep = 
+      reinterpret_cast<vtkImplicitPlaneRepresentation*>(planeWidget->GetRepresentation());
+    rep->GetPlane(this->Plane);
+    }
+  vtkIPWCallback():Plane(0),Actor(0) {}
+  vtkPlane *Plane;
+  vtkActor *Actor;
+ 
+};
+
 Drawing::Drawing(void)
 {
-	translation = vtkSmartPointer<vtkTransform>::New();
+	//translation = vtkSmartPointer<vtkTransform>::New();
 	ctxView = vtkContextView::New();
 	win = ctxView->GetRenderWindow();
 	ren = ctxView->GetRenderer();
@@ -25,6 +47,28 @@ void Drawing::setFileName(std::string file){
 	Drawing::filename = file ;
 }
 
+void Drawing::updateView(){
+	ctxView->Render() ;
+}
+
+void Drawing::setTransformationMatrix(const double* mat){
+	//cout << "--------------------------------------------------------------------------" << endl ;
+	for(int i = 0 ; i < 16 ; i++){
+		//mat[i] = 1 ;
+		//cout << mat[i] << " ; " ;
+	}
+	//cout << "************************************************************************** " << endl ;
+	//cout << endl ;
+	vtkMatrix4x4* matrix = vtkMatrix4x4::New();
+	matrix->DeepCopy(mat);
+	//vtkTransform* t = vtkTransform::New();
+	//t->SetMatrix(matrix);
+	//mainActor->GetMatrix()->DeepCopy(matrix);
+	mainActor->SetUserMatrix(matrix);
+	//mainActor->PokeMatrix(matrix);
+	//cout << "Matrix Changed" << endl ;
+}
+
 void Drawing::scale(float k){
 	//vtkSmartPointer<vtkTransform> transform =vtkSmartPointer<vtkTransform>::New();
 	//transform->Scale(5,1,1);
@@ -32,8 +76,9 @@ void Drawing::scale(float k){
 	//transformFilter->SetInputConnection(cone->GetOutputPort());
 	//transformFilter->SetTransform(transform);
 	//mapper->SetInputConnection(transformFilter->GetOutputPort());
+	
 	mainActor->SetScale(k);
-	ren->Render();
+	//ren->Render();
 }
 
 void Drawing::translate(float x, float y, float z){
@@ -44,7 +89,7 @@ void Drawing::translate(float x, float y, float z){
 	//transformFilter->Update();
 	double* position = mainActor->GetPosition();
 	mainActor->SetPosition(position[0]+x,position[1]+y,position[2]+z);
-	ren->Render();
+	//ren->Render();
 }
 
 void Drawing::rotate(float x, float y, float z){
@@ -56,7 +101,7 @@ void Drawing::rotate(float x, float y, float z){
 	//transform1a->RotateZ(z);
 	//mainActor->SetUserTransform(transform1a);
 	mainActor->RotateWXYZ(20,1,0,0);
-	ren->Render();
+	//ren->Render();
 }
 
 void Drawing::rotateCamera(float x, float y, float z){
@@ -122,26 +167,87 @@ void Drawing::defineClipping(){
 	return 0;
 }*/
 
+
+void Drawing::setCuttingPlane(){
+	// Setup a visualization pipeline
+	plane = vtkSmartPointer<vtkPlane>::New();
+	clipper = vtkSmartPointer<vtkClipPolyData>::New();
+	clipper->SetClipFunction(plane);
+	clipper->InsideOutOn();
+
+	reader =vtkSmartPointer<vtkXMLPolyDataReader>::New() ;
+	reader->SetFileName(filename.c_str()) ;
+	clipper->SetInputConnection(reader->GetOutputPort()) ;
+
+	// Create a mapper and actor
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(clipper->GetOutputPort());
+	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+ 
+	vtkSmartPointer<vtkProperty> backFaces = vtkSmartPointer<vtkProperty>::New();
+	backFaces->SetDiffuseColor(.8, .8, .4);
+	mainActor->SetBackfaceProperty(backFaces);
+ 
+/*	// A renderer and render window
+	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	renderWindow->AddRenderer(renderer);
+	renderer->AddActor(actor);
+			
+	// An interactor
+	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+	vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	renderWindowInteractor->SetRenderWindow(win);
+ 
+	renderWindow->Render();*/
+
+
+ 
+	// The callback will do the work of updating the view
+	vtkSmartPointer<vtkIPWCallback> myCallback = 
+	vtkSmartPointer<vtkIPWCallback>::New();
+	myCallback->Plane = plane;
+	myCallback->Actor = mainActor;
+ 
+	planerep = vtkSmartPointer<vtkImplicitPlaneRepresentation>::New();
+	planerep->SetPlaceFactor(1.25); // This must be set prior to placing the widget
+	planerep->PlaceWidget(mainActor->GetBounds());
+	planerep->SetNormal(plane->GetNormal());
+	planerep->SetOrigin(0,0,50); //this doesn't seem to work?
+ 
+	planeWidget = vtkSmartPointer<vtkImplicitPlaneWidget2>::New();
+	planeWidget->SetInteractor(iren);
+	planeWidget->SetRepresentation(planerep);
+	planeWidget->AddObserver(vtkCommand::InteractionEvent,myCallback);
+
+	ren->AddActor(actor);
+	planeWidget->On();
+ 
+/*  // Render
+ 
+  renderWindowInteractor->Initialize();
+  renderWindow->Render();
+  planeWidget->On();
+ 
+  // Begin mouse interaction
+  //renderWindowInteractor->Start();*/
+
+}
+
 void Drawing::read(){
 
 	// Read all the data from the file
-	vtkSmartPointer<vtkXMLPolyDataReader> reader =vtkSmartPointer<vtkXMLPolyDataReader>::New();
+	reader =vtkSmartPointer<vtkXMLPolyDataReader>::New();
 	reader->SetFileName(filename.c_str());
 	reader->Update();
 	inputPolyData = reader->GetOutput();
 
 	cout << "File Found and Loaded : " << filename << endl ;
 
-	vtkSmartPointer<vtkTransform> translation = vtkSmartPointer<vtkTransform>::New();
-	translation->Translate(0.3, -0.05, 0);
-	transformFilter = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-	//transformFilter->SetInputConnection(reader->GetOutputPort());
-	transformFilter->SetInputData(inputPolyData);
-	transformFilter->SetTransform(translation);
-	//transformFilter->Update();
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(transformFilter->GetOutputPort());
+	mapper->SetInputConnection(reader->GetOutputPort());
 
 	mainActor = vtkSmartPointer<vtkActor>::New();
 	mainActor->SetMapper(mapper);
@@ -149,21 +255,22 @@ void Drawing::read(){
 	ren->AddActor(mainActor);
 
 	iren->SetRenderWindow(win);
-	vtkInteractorStyleMultiTouchCamera *style =
-	vtkInteractorStyleMultiTouchCamera::New();
+	//myInteractorStyle *style = myInteractorStyle::New();
+	style = vtkSmartPointer<vtkInteractorStyleTrackballActor>::New();
 	iren->SetInteractorStyle(style);
+	
+	
+	setCuttingPlane();
 	
 	//Start the event loop
 	iren->Initialize();
-	//iren->Start();
+	iren->Start();
 
-	//defineClipping();
 	win->PolygonSmoothingOn();
 	win->Render();
 	win->Start();
 
 	ctxView->Render();
-
 	
 }
 

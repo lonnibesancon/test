@@ -76,6 +76,7 @@
   <ItemGroup>
     <ClCompile Include="Drawing.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="myInteractorStyle.cpp" />
     <ClCompile Include="oscpack\ip\IpEndpointName.cpp" />
     <ClCompile Include="oscpack\ip\win32\NetworkingUtils.cpp" />
     <ClCompile Include="oscpack\ip\win32\UdpSocket.cpp" />
@@ -94,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Drawing.h" />
+    <ClInclude Include="myInteractorStyle.h" />
     <ClInclude Include="SCProtocol.h" />
     <ClInclude Include="Server\tcp_server.h" />
     <ClInclude Include="System.h" />
