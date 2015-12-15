@@ -10,19 +10,19 @@ vtkSmartPointer<vtkTransformFilter> transformFilter;
 class vtkIPWCallback : public vtkCommand
 {
 public:
-  static vtkIPWCallback *New() 
-    { return new vtkIPWCallback; }
-  virtual void Execute(vtkObject *caller, unsigned long, void*)
-    {
-    vtkImplicitPlaneWidget2 *planeWidget = 
-      reinterpret_cast<vtkImplicitPlaneWidget2*>(caller);
-    vtkImplicitPlaneRepresentation *rep = 
-      reinterpret_cast<vtkImplicitPlaneRepresentation*>(planeWidget->GetRepresentation());
-    rep->GetPlane(this->Plane);
-    }
-  vtkIPWCallback():Plane(0),Actor(0) {}
-  vtkPlane *Plane;
-  vtkActor *Actor;
+	static vtkIPWCallback *New() 
+	{ 
+		return new vtkIPWCallback;
+	}
+	virtual void Execute(vtkObject *caller, unsigned long, void*)
+	{
+		vtkImplicitPlaneWidget2 *planeWidget = reinterpret_cast<vtkImplicitPlaneWidget2*>(caller);
+		vtkImplicitPlaneRepresentation *rep = reinterpret_cast<vtkImplicitPlaneRepresentation*>(planeWidget->GetRepresentation());
+		rep->GetPlane(this->Plane);
+	}
+	vtkIPWCallback():Plane(0),Actor(0) {}
+	vtkPlane *Plane;
+	vtkActor *Actor;
  
 };
 
@@ -51,22 +51,28 @@ void Drawing::updateView(){
 	ctxView->Render() ;
 }
 
-void Drawing::setTransformationMatrix(const double* mat){
-	//cout << "--------------------------------------------------------------------------" << endl ;
-	for(int i = 0 ; i < 16 ; i++){
-		//mat[i] = 1 ;
-		//cout << mat[i] << " ; " ;
+void Drawing::setTransformationMatrix(const double* mat, const int interactionMode){
+	if(interactionMode == OBJECTINTERACTION){
+		//cout << "--------------------------------------------------------------------------" << endl ;
+		for(int i = 0 ; i < 16 ; i++){
+			//mat[i] = 1 ;
+			//cout << mat[i] << " ; " ;
+		}
+		//cout << "************************************************************************** " << endl ;
+		//cout << endl ;
+		vtkMatrix4x4* matrix = vtkMatrix4x4::New();
+		matrix->DeepCopy(mat);
+		//vtkTransform* t = vtkTransform::New();
+		//t->SetMatrix(matrix);
+		//mainActor->GetMatrix()->DeepCopy(matrix);
+		mainActor->SetUserMatrix(matrix);
+		//mainActor->PokeMatrix(matrix);
+		//cout << "Matrix Changed" << endl ;
+
 	}
-	//cout << "************************************************************************** " << endl ;
-	//cout << endl ;
-	vtkMatrix4x4* matrix = vtkMatrix4x4::New();
-	matrix->DeepCopy(mat);
-	//vtkTransform* t = vtkTransform::New();
-	//t->SetMatrix(matrix);
-	//mainActor->GetMatrix()->DeepCopy(matrix);
-	mainActor->SetUserMatrix(matrix);
-	//mainActor->PokeMatrix(matrix);
-	//cout << "Matrix Changed" << endl ;
+	else if(interactionMode){
+		 //planerep->SetUserMatrix(matrix);
+	}
 }
 
 void Drawing::scale(float k){
@@ -175,7 +181,7 @@ void Drawing::setCuttingPlane(){
 	clipper->SetClipFunction(plane);
 	clipper->InsideOutOn();
 
-	reader =vtkSmartPointer<vtkXMLPolyDataReader>::New() ;
+	reader = vtkSmartPointer<vtkXMLPolyDataReader>::New() ;
 	reader->SetFileName(filename.c_str()) ;
 	clipper->SetInputConnection(reader->GetOutputPort()) ;
 
@@ -214,6 +220,7 @@ void Drawing::setCuttingPlane(){
 	planerep->SetPlaceFactor(1.25); // This must be set prior to placing the widget
 	planerep->PlaceWidget(mainActor->GetBounds());
 	planerep->SetNormal(plane->GetNormal());
+	//planerep->SetNormal(0,1,0);
 	planerep->SetOrigin(0,0,50); //this doesn't seem to work?
  
 	planeWidget = vtkSmartPointer<vtkImplicitPlaneWidget2>::New();

@@ -1,4 +1,4 @@
-﻿La génération a démarré 15/12/2015 11:11:19.
+﻿La génération a démarré 15/12/2015 11:52:06.
      1>Projet "C:\Users\Lonni\Desktop\lastversion\test\Projet1\Projet1.vcxproj" sur le nœud 2 (Build cible(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I"C:\Program Files (x86)\VTK\include\vtk-6.2\\" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt Drawing.cpp
@@ -27,4 +27,4 @@
 
 La génération a réussi.
 
-Temps écoulé 00:00:05.17
+Temps écoulé 00:00:05.23

@@ -9,6 +9,8 @@
 #define PARTICLES "particles.vtp"
 #define BUNNY "bunny.vtp"
 
+#include "SCProtocol.h"
+
 
 #include "vtkConeSource.h"
 #include "vtkPolyDataMapper.h"
@@ -181,7 +183,7 @@ public:
 	void dummy();
 	void defineClipping();
 	void updateView();
-	void setTransformationMatrix(const double* mat);
+	void setTransformationMatrix(const double* mat, const int interactionMode);
 	void setCuttingPlane();
 
 	/*Others*/

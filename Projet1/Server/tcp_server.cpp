@@ -169,11 +169,15 @@ void tcp_server::waitForMessage(){
 		string tok;
 		double matrix[16] ;
 		int msgtype ;
+		int interactionMode = OBJECTINTERACTION ; // Default case
 		//cout << "Line : " << msg << endl ;
-		while(getline(ss, tok, ';') && i < 17 ){
+		while(getline(ss, tok, ';') && i < 18 ){
 			if(i==0){
 				msgtype = atoi(tok.c_str());
 				
+			}
+			else if(i==1){
+				interactionMode = atoi(tok.c_str());
 			}
 			else{
 				//matrix[i] = static_cast<float>(::atof(tok.c_str()));
@@ -183,7 +187,8 @@ void tcp_server::waitForMessage(){
 			}
 			i++ ;
         }
-		drawing->setTransformationMatrix(matrix);
+
+		drawing->setTransformationMatrix(matrix, interactionMode);
         
 		
     //}
