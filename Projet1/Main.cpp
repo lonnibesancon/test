@@ -47,11 +47,15 @@ void start(){
 	//vtkMatrix4x4* matt = drawing->mainActor->GetMatrix();
 	//cout << "User Matrix = " << getStringFromMatrix(mat) << endl << endl ;
 	//cout << "     Matrix = " << getStringFromMatrix(matt) << endl << endl ;
-
+	double i = 0.5 ;
 	while(server->hasToClose == false){
+		//cout << "loop" << endl ;
 		server->waitForMessage();
+		//drawing->dummyPlaneInteraction(i);
 		drawing->updateView();	
 		//out << "     Matrix = " << getStringFromMatrix(matt) << endl << endl ;
+		
+
 	}
 	delete(server);
 }

@@ -51,45 +51,30 @@ int tcp_server::getNbOfClients(){
     }
  }
 
-void tcp_server::ProcessMessage(float data[]){
-	cout << data[0] << ";" << data[1] << endl ;
+void tcp_server::ProcessMessage(int msgType, int conditionalInfo, int mapper, double* mat, double* position, double* orientation){
+	/*cout << mat[0] << ";" << data[1] << endl ;
 	if(data[0] != CLIENTID ){
 		cerr << "Not a valid ID" << endl ;
-	}
-	else{
-		switch((int)data[1]){
-			case TOUCHROTATION:
-				drawing->rotateCamera(data[2],data[3],data[4]);
-				break;
-			case TOUCHTRANSLATION:
-				drawing->translate(data[2],data[3],data[4]);
-				break;
-			case TOUCHSCALE:
-				drawing->scale(data[2]);
-				break;
-			case TANGIBLEROTATION:
-
-				break;
-			case TANGIBLETRANSLATION:
-
-				break;
-			case TANGIBLESCALE:
-
-				break;
-			case PARTICLESDATASET:
-				tcp_server::drawing->setFileName(PARTICLES);
-				tcp_server::drawing->read();
-				break;
-			case JETLINESDATASET:
-				tcp_server::drawing->setFileName(JETLINES);
-				tcp_server::drawing->read();
-				break;
-			case ENDPROGRAM:
-				tcp_server::hasToClose = true ;
-				break ;
-			default:
-				cerr << "Not a valid message type" << endl ;
-		}
+	}*/
+	cout << "Modification" << endl ;
+	switch(msgType){
+		case NONEWEVENT:
+			cerr << "Error in the event type" << endl ;
+			break ;
+		case MATRIXCHANGED:
+			//cout << "Matrix" << endl ;
+			drawing->setMapper(mapper);
+			drawing->setTransformationMatrix(conditionalInfo, mat);
+			//cout << origin[0] << origin[1] << origin[2] << endl ;
+			//cout << " Coucou" << endl ;
+			drawing->setPositionAndOrientation(position, orientation);
+			break;
+		case ENDPROGRAM:
+			this->hasToClose = true ;
+			break;
+		default:
+			cerr << "Error: unknown even type" << endl ;
+			break ;
 	}
 }
 
@@ -167,35 +152,52 @@ void tcp_server::waitForMessage(){
 		std::stringstream ss(msg);
 		int i = 0 ;
 		string tok;
+		double allvalues[NUMBEROFITEMSINMESSAGE];
 		double matrix[16] ;
-		int msgtype ;
 		int interactionMode = OBJECTINTERACTION ; // Default case
+		int messageType = NONEWEVENT ;
+		int mapper = 0 ;
 		//cout << "Line : " << msg << endl ;
-		while(getline(ss, tok, ';') && i < 18 ){
-			if(i==0){
-				msgtype = atoi(tok.c_str());
-				
-			}
-			else if(i==1){
-				interactionMode = atoi(tok.c_str());
-			}
-			else{
-				//matrix[i] = static_cast<float>(::atof(tok.c_str()));
-				matrix[i-1] = stod(tok.c_str());
-				//cout << matrix[i] << ";" ;
-				
-			}
-			i++ ;
-        }
 
-		drawing->setTransformationMatrix(matrix, interactionMode);
-        
+		//First what kind of message is that
+		getline(ss, tok, ';');
+		messageType = atoi(tok.c_str());
+		getline(ss, tok, ';');
+		interactionMode = atoi(tok.c_str());
+		getline(ss, tok, ';');
+		mapper = atoi(tok.c_str());
+
+		//THEN POSITION AND ORIENTATION INFO
+		if(messageType != NONEWEVENT && messageType != ENDPROGRAM && messageType != CHANGEDATASET){
+			while(getline(ss, tok, ';') && i < NUMBEROFITEMSINMESSAGE ){
+				//cout << " new boucle " << endl ;
+				//matrix[i] = static_cast<float>(::atof(tok.c_str()));
+				allvalues[i] = stod(tok.c_str());
+				//cout << matrix[i] << ";" ;
+				//cout << i << " : "<< allvalues[i-1]<< endl ;
+				i++ ;
+			}
+		}
+		//cout << "fin" << endl ;
 		
+		for(int i = 0 ; i < 16 ; i++ ){
+			matrix[i] = allvalues[i] ;
+		}
+		double position[3] ;
+		position[0] = allvalues[16];
+		position[1] = allvalues[17];
+		position[2] = allvalues[18];
+		double orientation[4];
+		orientation[0] = allvalues[19];
+		orientation[1] = allvalues[19];
+		orientation[2] = allvalues[19];
+		orientation[3] = allvalues[19];
+		//cout << "Set origin to " << origin[0] << ", " << origin[1] << ", " << origin[2] << endl ;
+		//cout << "coucou" << endl ;
+		this->ProcessMessage(messageType, interactionMode, mapper, matrix, position,orientation);	
     //}
- 
     /*closesocket(s);
-    WSACleanup();
-     
+    WSACleanup();    
     return 0;*/
 
 }

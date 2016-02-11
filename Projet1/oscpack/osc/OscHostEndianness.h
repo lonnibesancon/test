@@ -38,18 +38,18 @@
 */
 
 
-#if defined(OSC_HOST_LITTLE_ENDIAN) || defined(OSC_HOST_BIG_ENDIAN)
+/*#if defined(OSC_HOST_LITTLE_ENDIAN) || defined(OSC_HOST_BIG_ENDIAN)
 
 
 
-#elif defined(__WIN32__) || defined(WIN32)
+#elif defined(__WIN32__) || defined(WIN32)*/
 
 // assume that __WIN32__ is only defined on little endian systems
 
 #define OSC_HOST_LITTLE_ENDIAN 1
 #undef OSC_HOST_BIG_ENDIAN
 
-#elif defined(__APPLE__)
+/*#elif defined(__APPLE__)
 
 #if defined(__LITTLE_ENDIAN__)
 #define OSC_HOST_LITTLE_ENDIAN 1
@@ -57,13 +57,13 @@
 #else
 #define OSC_HOST_BIG_ENDIAN 1
 #undef OSC_HOST_LITTLE_ENDIAN
-#endif
+#endif*/
 
-#else
+//#else
 
-#error please edit OSCHostEndianness.h to configure endianness
+//#error please edit OSCHostEndianness.h to configure endianness
 
-#endif
+//#endif
 
 #endif /* OSC_HOSTENDIANNESS_H */
 

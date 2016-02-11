@@ -22,12 +22,12 @@
 #ifndef INCLUDED_TUIOTIME_H
 #define INCLUDED_TUIOTIME_H
 
-#ifndef WIN32
+/*#ifndef WIN32
 #include <pthread.h>
 #include <sys/time.h>
-#else
+#else*/
 #include <windows.h>
-#endif
+//#endif
 
 #define MSEC_SECOND 1000
 #define USEC_SECOND 1000000

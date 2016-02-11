@@ -36,6 +36,9 @@ Drawing::Drawing(void)
 	iren = vtkRenderWindowInteractor::New();
 	ren->SetBackground(.0,.0,.0);
 	filename = BUNNY;
+	//filename = PARTICLES ;
+	clippingPlaneSet = false ;
+	currentMapper = MAPPERMAIN ;
 }
 
 
@@ -51,7 +54,7 @@ void Drawing::updateView(){
 	ctxView->Render() ;
 }
 
-void Drawing::setTransformationMatrix(const double* mat, const int interactionMode){
+void Drawing::setTransformationMatrix(const int interactionMode, const double* mat){
 	if(interactionMode == OBJECTINTERACTION){
 		//cout << "--------------------------------------------------------------------------" << endl ;
 		for(int i = 0 ; i < 16 ; i++){
@@ -69,10 +72,76 @@ void Drawing::setTransformationMatrix(const double* mat, const int interactionMo
 		//mainActor->PokeMatrix(matrix);
 		//cout << "Matrix Changed" << endl ;
 
+
 	}
 	else if(interactionMode){
 		 //planerep->SetUserMatrix(matrix);
 	}
+	else{
+		cerr << "Error in the interaction Mode" << endl ;
+	}
+}
+
+void Drawing::setMapper(int mapper){
+	//cout << "CurrentMapper " << currentMapper << "   mapper " << mapper << endl ;
+	if(mapper!=currentMapper){
+		this->currentMapper = mapper ;
+		//cout << "Now current Mapper = " << currentMapper << endl ;
+		if(mapper == MAPPERPLANE){
+			cout << "coucou" << mapper << endl ;
+			this->mainActor->SetMapper(mapperPlane);
+		}
+		else{
+			//cout << "else"<< mapper << endl ;
+			this->mainActor->SetMapper(mapperMain);
+		}
+	}
+}
+
+
+void Drawing::setPositionAndOrientation(double* position,double* orientation){
+	//cout << "Set origin to " << origin[0] << ", " << origin[1] << ", " << origin[2] << endl ;
+	//plane->SetOrigin(origin);
+	//planerep->SetOrigin(origin);
+	//ren->Render();
+	//planeWidget->SetOrigin(origin[0], origin[1], origin[2]);
+	//planeWidget->UpdatePlacement();
+	vtkSmartPointer<vtkTransform> t = vtkTransform::SafeDownCast(plane->GetTransform());
+	//t->RotateWXYZ(orientation[0],orientation[1],orientation[2],orientation[3]);
+	t->Translate(position);
+	plane->SetTransform(t);
+}
+
+void Drawing::dummyPlaneInteraction(double i){
+	/*double origin[3] ;
+	planeWidget->GetOrigin(origin);
+	//origin[0] += 0.002 ;
+	cout << "origin 0 " << origin[0] << endl ;
+	planeWidget->SetOrigin(origin[0], origin[1], origin[2]);
+	planeWidget->UpdatePlacement();*/
+	double v2[3];
+	vtkTransform* t = vtkTransform::SafeDownCast(plane->GetTransform());
+	//t->Identity();
+	t->RotateX(i);
+	plane->SetTransform(t);
+	cout << "Rotate " << i << endl ;
+	/*this->planeWidget->GetVector(v2);
+	// Transform
+	vtkSmartPointer<vtkTransform> transform
+	= vtkSmartPointer<vtkTransform>::New();
+	transform->PreMultiply();
+	transform->Translate(wc[0],wc[1],wc[2]);
+	transform->RotateWXYZ(90,v2[0],v2[1],v2[2]);
+	transform->Translate(-wc[0],-wc[1],-wc[2]);
+	// Modify and update planeWidget
+	double newpt[3];
+	transform->TransformPoint(this->planeWidget[whichPlane]->GetPoint1(),newpt);
+	this->planeWidget[whichPlane]->SetPoint1(newpt);
+	transform->TransformPoint(this->planeWidget[whichPlane]->GetPoint2(),newpt);
+	this->planeWidget[whichPlane]->SetPoint2(newpt);
+	transform->TransformPoint(this->planeWidget[whichPlane]->GetOrigin(),newpt);
+	this->planeWidget[whichPlane]->SetOrigin(newpt);
+	planeWidget[whichPlane]->UpdatePlacement();*/
 }
 
 void Drawing::scale(float k){
@@ -175,8 +244,9 @@ void Drawing::defineClipping(){
 
 
 void Drawing::setCuttingPlane(){
-	// Setup a visualization pipeline
+	/// Setup a visualization pipeline
 	plane = vtkSmartPointer<vtkPlane>::New();
+	plane->SetTransform(vtkTransform::New()); 
 	clipper = vtkSmartPointer<vtkClipPolyData>::New();
 	clipper->SetClipFunction(plane);
 	clipper->InsideOutOn();
@@ -186,13 +256,15 @@ void Drawing::setCuttingPlane(){
 	clipper->SetInputConnection(reader->GetOutputPort()) ;
 
 	// Create a mapper and actor
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(clipper->GetOutputPort());
+	mapperPlane = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapperPlane->SetInputConnection(clipper->GetOutputPort());
 	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mapper);
+	//actor->SetMapper(mapper);
+	//mainActor->SetMapper(mapperPlane);
  
 	vtkSmartPointer<vtkProperty> backFaces = vtkSmartPointer<vtkProperty>::New();
-	backFaces->SetDiffuseColor(.8, .8, .4);
+	backFaces->SetDiffuseColor(.8, .1, .1);
+	//actor->SetBackfaceProperty(backFaces);
 	mainActor->SetBackfaceProperty(backFaces);
  
 /*	// A renderer and render window
@@ -214,31 +286,35 @@ void Drawing::setCuttingPlane(){
 	vtkSmartPointer<vtkIPWCallback> myCallback = 
 	vtkSmartPointer<vtkIPWCallback>::New();
 	myCallback->Plane = plane;
-	myCallback->Actor = mainActor;
+	//myCallback->Actor = actor;
+	myCallback->Actor = mainActor ;
  
 	planerep = vtkSmartPointer<vtkImplicitPlaneRepresentation>::New();
-	planerep->SetPlaceFactor(1.25); // This must be set prior to placing the widget
+	planerep->SetPlaceFactor(1.5); // This must be set prior to placing the widget
+	//planerep->PlaceWidget(mainActor->GetBounds());
 	planerep->PlaceWidget(mainActor->GetBounds());
 	planerep->SetNormal(plane->GetNormal());
-	//planerep->SetNormal(0,1,0);
+	planerep->SetNormal(0,1,0);
 	planerep->SetOrigin(0,0,50); //this doesn't seem to work?
  
-	planeWidget = vtkSmartPointer<vtkImplicitPlaneWidget2>::New();
-	planeWidget->SetInteractor(iren);
-	planeWidget->SetRepresentation(planerep);
-	planeWidget->AddObserver(vtkCommand::InteractionEvent,myCallback);
+	//planeWidget = vtkSmartPointer<vtkImplicitPlaneWidget2>::New();
+	//planeWidget->SetInteractor(iren);
+	//planeWidget->SetRepresentation(planerep);
+	//planeWidget->AddObserver(vtkCommand::InteractionEvent,myCallback);
 
-	ren->AddActor(actor);
-	planeWidget->On();
+	//ren->AddActor(actor);
+	//planeWidget->On();
  
 /*  // Render
  
-  renderWindowInteractor->Initialize();
-  renderWindow->Render();
+  iren->Initialize();
+  win->Render();
   planeWidget->On();
  
   // Begin mouse interaction
-  //renderWindowInteractor->Start();*/
+  iren->Start();*/
+
+
 
 }
 
@@ -253,11 +329,11 @@ void Drawing::read(){
 	cout << "File Found and Loaded : " << filename << endl ;
 
 
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(reader->GetOutputPort());
+	mapperMain = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapperMain->SetInputConnection(reader->GetOutputPort());
 
 	mainActor = vtkSmartPointer<vtkActor>::New();
-	mainActor->SetMapper(mapper);
+	mainActor->SetMapper(mapperMain);
 
 	ren->AddActor(mainActor);
 
@@ -271,9 +347,10 @@ void Drawing::read(){
 	
 	//Start the event loop
 	iren->Initialize();
-	iren->Start();
+	//iren->Start();
 
 	win->PolygonSmoothingOn();
+	win->SetSize(640,368);
 	win->Render();
 	win->Start();
 
@@ -356,7 +433,7 @@ void Drawing::readOriginal(){
  
 	renderWindow->PolygonSmoothingOn();
 	renderWindow->Render();
-	renderWindowInteractor->Start();
+	//renderWindowInteractor->Start();
 }
 
 void Drawing::dummy (){

@@ -10,6 +10,8 @@
 #define BUNNY "bunny.vtp"
 
 #include "SCProtocol.h"
+#include <chrono>
+#include "vtkNetCDFCFReader.h"
 
 
 #include "vtkConeSource.h"
@@ -139,7 +141,7 @@
 #include <vtkIdFilter.h>
 #include <vtkGPUVolumeRayCastMapper.h>
 #include <vtkImplicitPlaneWidget2.h>
-
+#include <vtkImplicitPlaneWidget.h>
 
 //Doublons possibles
 #include <vtkActor.h>
@@ -183,8 +185,11 @@ public:
 	void dummy();
 	void defineClipping();
 	void updateView();
-	void setTransformationMatrix(const double* mat, const int interactionMode);
+	void setTransformationMatrix(const int interactionMode, const double* mat);
 	void setCuttingPlane();
+	void setPositionAndOrientation(double* position, double* orientation);
+	void dummyPlaneInteraction(double i);
+	void setMapper(int mapper);
 
 	/*Others*/
 	void setFileName(std::string);
@@ -211,13 +216,20 @@ public:
 
 	//For the clipping plane
 	vtkSmartPointer<vtkPlane> plane ;
+	vtkSmartPointer<vtkPolyDataMapper> planemapper ;
+	vtkSmartPointer<vtkActor> planeActor ;
+	vtkSmartPointer<vtkMapper> mapperMain ;
+	vtkSmartPointer<vtkMapper> mapperPlane ;
 	vtkSmartPointer<vtkClipPolyData> clipper ;
 	vtkSmartPointer<vtkImplicitPlaneWidget2> planeWidget ;
+	//vtkSmartPointer<vtkImplicitPlaneWidget> planeWidget ;
 	vtkSmartPointer<vtkImplicitPlaneRepresentation> planerep ;
+	bool clippingPlaneSet ;
 
 protected:
 
 	std::string filename ;
+	int currentMapper ;
 
 };
 
