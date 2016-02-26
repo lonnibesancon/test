@@ -51,23 +51,26 @@ int tcp_server::getNbOfClients(){
     }
  }
 
-void tcp_server::ProcessMessage(int msgType, int conditionalInfo, int mapper, double* mat, double* position, double* orientation){
+void tcp_server::ProcessMessage(int msgType, int interactionMode, int mapper, double* mat, double* position, double* orientation, double* seedPoint){
 	/*cout << mat[0] << ";" << data[1] << endl ;
 	if(data[0] != CLIENTID ){
 		cerr << "Not a valid ID" << endl ;
 	}*/
-	cout << "Modification" << endl ;
+	//cout << "Modification" << endl ;
+	//cout << msgType << " ---- " << NONEWEVENT << endl << endl ;
 	switch(msgType){
 		case NONEWEVENT:
 			cerr << "Error in the event type" << endl ;
 			break ;
 		case MATRIXCHANGED:
 			//cout << "Matrix" << endl ;
-			drawing->setMapper(mapper);
-			drawing->setTransformationMatrix(conditionalInfo, mat);
+			//drawing->setMapper(mapper);
+			drawing->setTransformationMatrix(interactionMode, mat);
 			//cout << origin[0] << origin[1] << origin[2] << endl ;
 			//cout << " Coucou" << endl ;
-			drawing->setPositionAndOrientation(position, orientation);
+			drawing->setPositionAndOrientation(position, orientation,interactionMode);
+			drawing->updateClipping();
+			drawing->setSeedPoints(seedPoint);
 			break;
 		case ENDPROGRAM:
 			this->hasToClose = true ;
@@ -189,12 +192,16 @@ void tcp_server::waitForMessage(){
 		position[2] = allvalues[18];
 		double orientation[4];
 		orientation[0] = allvalues[19];
-		orientation[1] = allvalues[19];
-		orientation[2] = allvalues[19];
-		orientation[3] = allvalues[19];
+		orientation[1] = allvalues[20];
+		orientation[2] = allvalues[21];
+		double seedPoint[3];
+		seedPoint[0] = allvalues[22];
+		seedPoint[1] = allvalues[23];
+		seedPoint[2] = allvalues[24];
+
 		//cout << "Set origin to " << origin[0] << ", " << origin[1] << ", " << origin[2] << endl ;
 		//cout << "coucou" << endl ;
-		this->ProcessMessage(messageType, interactionMode, mapper, matrix, position,orientation);	
+		this->ProcessMessage(messageType, interactionMode, mapper, matrix, position,orientation, seedPoint);	
     //}
     /*closesocket(s);
     WSACleanup();    

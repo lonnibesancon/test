@@ -31,7 +31,7 @@ protected:
 
 private:
     //int acceptConns();
-	void ProcessMessage(int msgType, int conditionalInfo = 0, int mapper=0, double* mat = 0, double* origin=0, double* normal=0);
+	void ProcessMessage(int msgType, int interactionMode = 0, int mapper=0, double* mat = 0, double* origin=0, double* normal=0, double* seedPoint = 0);
 
 };
 
