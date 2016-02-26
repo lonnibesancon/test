@@ -42,7 +42,7 @@ void integrateParticleMotion(Particle& p,vtkSmartPointer<vtkImageData> velocityD
     return;
   }
 
-  vtkDataArray* vectors = velocityData->GetPointData()->GetVectors();
+  vtkSmartPointer<vtkDataArray> vectors = velocityData->GetPointData()->GetVectors();
 
 
   while (elapsedMs > 0) {
@@ -59,13 +59,14 @@ void integrateParticleMotion(Particle& p,vtkSmartPointer<vtkImageData> velocityD
     }
 
     double* v = vectors->GetTuple3(coords.z*(dataDim[0]*dataDim[1]) + coords.y*dataDim[0] + coords.x);
-    // LOGD("v = %f, %f, %f", v[0], v[1], v[2]);
+    //printf("v = %f, %f, %f", v[0], v[1], v[2]);
 
     // Vector3 vel(v[0], v[1], v[2]);
     Vector3 vel(v[1], v[0], v[2]); // XXX: workaround for a wrong data orientation
 
     if (!vel.isNull()) {
       p.pos += vel * particleSpeed;
+	  printf("p.pos= = %f, %f, %f \n", p.pos.x, p.pos.y, p.pos.z);
     } else {
       // LOGD("particle stopped");
       p.stallMs = particleStallDuration;
@@ -146,6 +147,9 @@ void releaseParticles(const int *dataDim, std::vector<Particle> particles, doubl
     for (int i = 0 ; i < 200 ; i++) {
       p = particles[i] ;
       p.pos = Vector3(coords.x, coords.y, coords.z) + particleJitter();
+	  //cout << " Coord.x " << coords.x << " coords.y = " << coords.y << " coords.z = " << coords.z << endl ;
+	  //cout << " p.pos.x " << p.pos.x << " p.pos.y = " << p.pos.y << " p.pos.z = " << p.pos.z << endl ;
+	  //cout << "Particle jitter X = " << particleJitter().x << endl ;
       p.lastTime = particleSTime;
       p.delayMs = delay;
       delay += particleReleaseDuration/particles.size();

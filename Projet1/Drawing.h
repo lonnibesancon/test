@@ -171,6 +171,7 @@
 #include <vtkPlanes.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkDoubleArray.h>
+#include <vtkVertexGlyphFilter.h>
 
 #include <vtkImageChangeInformation.h>
 #include <vtkStructuredPointsWriter.h>
@@ -244,6 +245,7 @@ public:
 	vtkSmartPointer<vtkPoints> points ;
 	vtkSmartPointer<vtkPolyData> pointData ;
 	vtkSmartPointer<vtkPolyDataMapper> mapperPoint ;
+	vtkSmartPointer<vtkActor> pointsActor ;
 	double* dataBounds ;
 	int interactionMode ;
 	std::vector<Particle> particles;

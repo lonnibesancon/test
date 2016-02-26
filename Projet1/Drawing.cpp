@@ -45,6 +45,7 @@ Drawing::Drawing(void)
 	points = vtkSmartPointer<vtkPoints>::New();
 	pointData = vtkSmartPointer<vtkPolyData>::New();
 	mapperPoint = vtkSmartPointer<vtkPolyDataMapper>::New();
+	pointsActor =vtkSmartPointer<vtkActor>::New();
 	for(int i = 0 ; i < NBPARTICLES ; i++){
 		Particle p ;
 		particles.push_back(p);
@@ -456,6 +457,7 @@ void Drawing::read(){
 	mainActor = volume ;
 
 	Renderer->AddViewProp(mainActor);
+	Renderer->AddActor(pointsActor);
 	Renderer->ResetCamera();
 
 	Interactor = vtkRenderWindowInteractor::New();
@@ -463,6 +465,7 @@ void Drawing::read(){
 	vtkSmartPointer<myInteractorStyle> style = vtkSmartPointer<myInteractorStyle>::New(); 
 	Interactor->SetInteractorStyle( style );
 
+	cout << "Reading data done" << endl ;
 	readVelocities();
 	RenderWindow->PolygonSmoothingOn();
 	RenderWindow->SetSize(640,368);
@@ -483,6 +486,7 @@ void Drawing::readVelocities(){
 	reader->Update();
 	velocityData = vtkSmartPointer<vtkImageData>::New();
 	velocityData->ShallowCopy(reader->GetOutput());
+	cout << "Reading Velocities done" << endl ;
 
 }
 
@@ -499,18 +503,31 @@ void Drawing::setSeedPoints(double* seedPoint){
 }
 
 void Drawing::setVTKPoints(){
-	Particle p;
+	Particle p = particles[0] ;
+	cout << "Point " << "Valid: X = " << p.pos.x << " Y = " << p.pos.y << " Z = " << p.pos.z << endl ;
 	for(int i = 0 ; i < 200 ; i++ ){
 		p = particles[i];
+		cout << "-------->Particle number " << i << endl ;
 		if(p.valid){
 			integrateParticleMotion(p, velocityData, dataDimensions);
-			points->InsertNextPoint(p.pos.x, p.pos.y, p.pos.z);
+			points->InsertNextPoint(p.pos.x, p.pos.y, p.pos.z);			
 		}
 	}
+	cout << "test" << endl ;
 }
 
 void Drawing::drawPoints(){
-
+	pointData->SetPoints(points);
+	vtkSmartPointer<vtkVertexGlyphFilter> vertexGlyphFilter = vtkSmartPointer<vtkVertexGlyphFilter>::New();
+	vertexGlyphFilter->AddInputData(pointData);
+	vertexGlyphFilter->Update();
+	mapperPoint->SetInputConnection(vertexGlyphFilter->GetOutputPort());
+	pointsActor = vtkSmartPointer<vtkActor>::New();
+	pointsActor->SetMapper(mapperPoint);
+	pointsActor->GetProperty()->SetPointSize(10);
+	pointsActor->GetProperty()->SetColor(1.0,0.0,1);
+	//Renderer->AddActor(pointsActor);
+	//cout << "Points added" << endl ;
 }
 
 
