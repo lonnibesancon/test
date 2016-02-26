@@ -8,6 +8,7 @@
 #define JETLINES "jetLinesSmall2.vtp"
 #define PARTICLES "particles.vtp"
 #define BUNNY "bunny.vtp"
+#define FTLE "../Data/ftlelog.vtk"
 
 #include "SCProtocol.h"
 #include <chrono>
@@ -97,6 +98,8 @@
 #include <vtkPolyDataMapper.h>
 #include <vtkGenericRenderWindowInteractor.h>
 
+#include <vtkLightKit.h>
+
 //Protein ribbon
 #include <vtkProteinRibbonFilter.h>
 
@@ -128,7 +131,7 @@
 #include <vtkRenderPassCollection.h>
 #include <vtkSequencePass.h>
 #include <vtkOpenGLRenderer.h>
-#include <vtkImplicitPlaneRepresentation.h>
+#include "myImplicitPlaneRepresentation.h"
 #include <vtkTransformFilter.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
@@ -165,9 +168,22 @@
 #include <vtkSampleFunction.h>
 #include <vtkSmartPointer.h>
 #include <vtkPlane.h>
+#include <vtkPlanes.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkDoubleArray.h>
+
+#include <vtkImageChangeInformation.h>
+#include <vtkStructuredPointsWriter.h>
+#include <vtkOpenGLGPUVolumeRayCastMapper.h>
+#include <vtkDataSetReader.h>
+#include <vtkClipDataSet.h>
+#include <vtkPoints.h>
+#include <vtkPlaneCollection.h>
 
 #include "myInteractorStyle.h"
+#include "Particles.h"
+#include <sstream>
+
 
 class Drawing
 {
@@ -181,55 +197,113 @@ public:
 	void scale(float k);
 	void rotateCamera(float x, float y, float z);
 	void read();
-	void readOriginal();
+	//void readOriginal();
+	//void newRead();
 	void dummy();
-	void defineClipping();
+	//void defineClipping();
 	void updateView();
 	void setTransformationMatrix(const int interactionMode, const double* mat);
 	void setCuttingPlane();
-	void setPositionAndOrientation(double* position, double* orientation);
+	void setPositionAndOrientation(double* position, double* orientation, const int interactionMode);
 	void dummyPlaneInteraction(double i);
 	void setMapper(int mapper);
+	void readVelocities();
+	void changeInteractionMode(int mode);
+	void setNormalInteractionMode();
+	void setSeedInteractionMode();
+	void updateClipping();
+	void setSeedPoints(double* seedPoint);
+	
 
 	/*Others*/
 	void setFileName(std::string);
-	
 
+	vtkSmartPointer<vtkContextView> ctxView ;
 
-	/*vtkSmartPointer<vtkPlane> clipPlane;
-	vtkSmartPointer<vtkImplicitPlaneRepresentation> planeRep;
-	vtkSmartPointer<vtkActor> actorPlaneSource;*/
-
-	vtkSmartPointer<vtkActor> mainActor;
-	vtkSmartPointer<vtkXMLPolyDataReader> reader ;
-	vtkSmartPointer<vtkPolyData> inputPolyData;
-
-	vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter;
-	vtkSmartPointer<vtkTransform> translation ;
-	vtkContextView* ctxView ;
-	vtkRenderWindow* win ;
-	vtkRenderer* ren ;
-	vtkCamera* cam ;
-	vtkRenderWindowInteractor *iren;
-	
-	vtkSmartPointer<vtkInteractorStyleTrackballActor> style ;
-
-	//For the clipping plane
+	//New dataset
+	vtkSmartPointer<vtkRenderWindow> RenderWindow;
+	vtkSmartPointer<vtkRenderer> Renderer;
+	vtkSmartPointer<vtkRenderWindowInteractor> Interactor;
+	vtkSmartPointer<myInteractorStyle> style ;
+	vtkSmartPointer<vtkProp3D> mainActor;
+	vtkSmartPointer<vtkPolyDataMapper> mapperPlane ;
+	vtkSmartPointer<vtkOpenGLGPUVolumeRayCastMapper> mainMapper ;
+	vtkSmartPointer<vtkActor> actorCuttingPlane;
 	vtkSmartPointer<vtkPlane> plane ;
-	vtkSmartPointer<vtkPolyDataMapper> planemapper ;
-	vtkSmartPointer<vtkActor> planeActor ;
-	vtkSmartPointer<vtkMapper> mapperMain ;
-	vtkSmartPointer<vtkMapper> mapperPlane ;
-	vtkSmartPointer<vtkClipPolyData> clipper ;
+	vtkSmartPointer<vtkClipDataSet> clipper ;
 	vtkSmartPointer<vtkImplicitPlaneWidget2> planeWidget ;
-	//vtkSmartPointer<vtkImplicitPlaneWidget> planeWidget ;
-	vtkSmartPointer<vtkImplicitPlaneRepresentation> planerep ;
-	bool clippingPlaneSet ;
+	vtkSmartPointer<myImplicitPlaneRepresentation> planeRep ;
+	//vtkSmartPointer<vtkXMLPolyDataReader> reader ;
+	vtkSmartPointer<vtkDataSetReader> reader ;
+	vtkSmartPointer<vtkActor> outlineActor ;
+	vtkSmartPointer<vtkActor> cuttingActor ;
+	vtkSmartPointer<vtkImageData> velocityData ;
+	vtkSmartPointer<vtkImageData> imageData ; // The volume Data
+	vtkSmartPointer<vtkPolyDataMapper> mapperSliceData ;
+	vtkSmartPointer<vtkActor> slicedActor ;
+	vtkSmartPointer<vtkPoints> points ;
+	vtkSmartPointer<vtkPolyData> pointData ;
+	vtkSmartPointer<vtkPolyDataMapper> mapperPoint ;
+	double* dataBounds ;
+	int interactionMode ;
+	std::vector<Particle> particles;
+	int* dataDimensions ;
+
+
+	//*vtkSmartPointer<vtkPlane> clipPlane;
+	//vtkSmartPointer<myImplicitPlaneRepresentation> planeRep;
+	//vtkSmartPointer<vtkActor> actorPlaneSource;*/
+
+	//vtkSmartPointer<vtkActor> mainActor;
+	//vtkSmartPointer<vtkXMLPolyDataReader> readerbunny ;
+	//vtkSmartPointer<vtkPolyData> inputPolyData;
+
+	//vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter;
+	//vtkSmartPointer<vtkTransform> translation ;
+	//vtkContextView* ctxView ;
+	//vtkRenderWindow* win ;
+	////vtkRenderer* ren ;
+	//vtkCamera* cam ;
+	//vtkRenderWindowInteractor *iren;
+	//
+	//vtkSmartPointer<vtkInteractorStyleTrackballActor> style ;
+
+	////For the clipping plane
+	//vtkSmartPointer<vtkPlane> plane ;
+	//vtkSmartPointer<vtkPolyDataMapper> planemapper ;
+	//vtkSmartPointer<vtkActor> planeActor ;
+	//vtkSmartPointer<vtkMapper> mapperMain ;
+	//vtkSmartPointer<vtkMapper> mapperPlane ;
+	//vtkSmartPointer<vtkClipPolyData> clipper ;
+	//vtkSmartPointer<vtkImplicitPlaneWidget2> planeWidget ;
+	////vtkSmartPointer<vtkImplicitPlaneWidget> planeWidget ;
+	//vtkSmartPointer<myImplicitPlaneRepresentation> planerep ;
+	//bool clippingPlaneSet ;
+	//
+	//
+	//
+	////For the new dataset
+	//int number_of_timesteps;
+	//std::string baseNameVector;
+	//std::string baseNameScalar;
+	//bool overWriteMaxValue;
+	//bool overWriteMinValue;
+	//double minValue;
+	//double maxValue;
+	//std::vector<vtkSmartPointer<vtkStructuredPointsReader>> reader;
+
+	//std::vector<vtkSmartPointer<vtkStructuredPointsReader>> readerVector;
+	//std::vector<vtkSmartPointer<vtkImageChangeInformation>> transformVector;
+	//static const int NUM_VIEWS = 2;
+	//vtkSmartPointer<vtkRenderer> ren[NUM_VIEWS];
 
 protected:
 
 	std::string filename ;
+	std::string velocitiesName ;
 	int currentMapper ;
+	void setVTKPoints();
+	void drawPoints();
 
 };
 
